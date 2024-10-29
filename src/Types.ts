@@ -10,11 +10,16 @@ export type Invoice = {
     InvoiceNote: string;
   };
   
-
   export type TokenInfo = {
     Name: string;
     Anchor: string;
     Ticker: string;
     Logo: string;
+  };
+
+  export type Balance = {
+    Balance: string;
+    Ticker: string;
+    Target: string;
   };
   

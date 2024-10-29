@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { SendInvoicePayment, SendPayMessage, ConvertTimestampToDateTime, FormatBalanceDecimal } from '../MiscTools';
+import { useGlobalContext } from '../GlobalProvider';
+import { SendInvoicePayment, SendPayMessage, ConvertTimestampToDateTime, 
+  FormatBalanceDecimal, SendProcessMessage, FormatBalance } from '../MiscTools';
 import ClipLoader from 'react-spinners/ClipLoader';
-import { Invoice } from "../Types";
+import { Invoice, Balance } from "../Types";
 import Breadcrumbs from './Breadcrumbs';
 import CopyButton from './CopyButton';
 import QRCode from "react-qr-code";
 
 function InvoiceDetails() {
+
+  const { ADDRESS } = useGlobalContext();
+
   const { id } = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState(0);
 
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
@@ -26,6 +32,26 @@ function InvoiceDetails() {
     };
 
     fetchInvoiceDetails();
+  }, [id]);
+
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+
+        const result = await SendProcessMessage("Balance", JSON.stringify( {"Recipient":"" +ADDRESS} ));
+        const numericResult = parseInt(result, 10); 
+        // console.log( numericResult );
+        // console.log( FormatBalance(numericResult) );
+        setBalance( FormatBalance(numericResult) );
+
+
+      } catch (error) {
+        console.error("Failed to fetch balance:", error);
+      }
+    };
+
+    fetchBalance();
   }, [id]);
 
   const handlePayInvoice = async () => {
@@ -154,12 +180,18 @@ function InvoiceDetails() {
           </div>
 
           {invoice.Status === 'Pending' && (
-            <button
-              onClick={handlePayInvoice}
-              className="mt-4 bg-[#4318FF] text-white font-semibold py-2 px-4 rounded hover:bg-[#503BC4] transition duration-300 ease-in-out"
-            >
-              Pay Invoice
-            </button>
+            
+            <div className="flex flex-col items-center mb-2">
+              <button
+                onClick={handlePayInvoice}
+                className="bg-[#4318FF] text-white font-semibold py-2 px-4 rounded hover:bg-[#503BC4] transition duration-300 ease-in-out"
+              >
+                Pay Invoice
+              </button>
+              
+              <span className="text-sm text-[#A3AED0]">Balance: {balance} qAR</span>
+            </div>
+            
           )}
 
       </div>
@@ -167,7 +199,6 @@ function InvoiceDetails() {
         <p className="text-gray-500">Invoice not found.</p>
       )}
 
-      
       </div> 
 
     </div>

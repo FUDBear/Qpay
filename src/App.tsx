@@ -6,6 +6,7 @@ import InvoicesTable from './Components/InvoicesTable';
 import InvoiceDetails from './Components/InvoiceDetails';
 import InvoiceCreation from "./Components/InvoiceCreation";
 import WalletButton from "./Components/WalletButton";
+import BalanceButton from "./Components/BalanceButton";
 
 function App() {
 	return (
@@ -20,6 +21,11 @@ function App() {
 			{/* Wallet Button in Top Right Corner */}
 			<div className="absolute top-4 right-4">
 				<WalletButton />
+			</div>
+
+			{/* Balance Button in Bottom Right Corner */}
+			<div className="absolute bottom-4 right-4">
+				<BalanceButton />
 			</div>
 
 		</HashRouter>
