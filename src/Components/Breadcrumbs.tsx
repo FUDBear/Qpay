@@ -12,6 +12,7 @@ function Breadcrumbs() {
 
   return (
     <nav className="fixed top-4 left-4 text-sm text-gray-600 bg-white p-2 rounded shadow">
+      
       <ul className="flex items-center space-x-2">
         <li>
           <Link to="/" className="text-blue-600 hover:underline">

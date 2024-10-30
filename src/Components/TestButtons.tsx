@@ -66,10 +66,17 @@ function TestButtons() {
         try {
           if ( ADDRESS !== 'disconnected' && window.arweaveWallet) {
   
-            const result = await SendProcessMessage("Balance", JSON.stringify( {"Recipient":"" +ADDRESS} ));
-            const numericResult = parseInt(result, 10); 
-            console.log( numericResult );
-            console.log( FormatBalance(numericResult) );
+            // const result = await SendProcessMessage("Balance", JSON.stringify( {"Recipient":"" +ADDRESS} ));
+
+            // const result = await SendProcessDryrun("Balance", JSON.stringify( {"Recipient":"" +ADDRESS} ));
+            // console.log( "Result: " , result );
+
+            const result = await GetQARBalance( ADDRESS );
+            console.log( "Result: " , result );
+
+            // const numericResult = parseInt(result, 10); 
+            // console.log( numericResult );
+            // console.log( FormatBalance(numericResult) );
             
   
           } else {

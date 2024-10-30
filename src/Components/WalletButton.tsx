@@ -5,7 +5,6 @@ import { PermissionType } from 'arconnect';
 import { useGlobalContext } from '../GlobalProvider';
 import { TruncateAddress } from "../MiscTools";
 
-
 function WalletButton() {
 
     const { setADDRESS, ADDRESS } = useGlobalContext();
@@ -43,9 +42,6 @@ function WalletButton() {
       }
     };
 
-    // useEffect(() => {
-    // }, [ADDRESS]);
-
     return (
         <div>
     
@@ -58,7 +54,7 @@ function WalletButton() {
               >
                 Disconnect
               </button>
-              <span className="text-sm text-[#A3AED0]">{TruncateAddress(ADDRESS)}</span>
+              <span className="text-xs text-[#A3AED0]">{TruncateAddress(ADDRESS)}</span>
               </div>
             ) : (
               <button

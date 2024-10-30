@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendInvoicePayment, SendPayMessage, ConvertTimestampToDateTime, 
-  FormatBalanceDecimal, SendProcessMessage, FormatBalance } from '../MiscTools';
+  FormatBalanceDecimal, SendProcessMessage, FormatBalance, 
+  GetQARBalance} from '../MiscTools';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { Invoice, Balance } from "../Types";
 import Breadcrumbs from './Breadcrumbs';
@@ -38,12 +39,8 @@ function InvoiceDetails() {
   useEffect(() => {
     const fetchBalance = async () => {
       try {
-
-        const result = await SendProcessMessage("Balance", JSON.stringify( {"Recipient":"" +ADDRESS} ));
-        const numericResult = parseInt(result, 10); 
-        // console.log( numericResult );
-        // console.log( FormatBalance(numericResult) );
-        setBalance( FormatBalance(numericResult) );
+        const result = await GetQARBalance(ADDRESS);
+        setBalance( FormatBalance(result) );
 
 
       } catch (error) {

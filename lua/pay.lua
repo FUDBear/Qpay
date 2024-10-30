@@ -97,6 +97,29 @@ local function printAllInvoices()
     end
 end
 
+local function printInvoiceById(invoiceId)
+    print("Searching for InvoiceID:" .. invoiceId)
+
+    local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
+    local invoices = dbAdmin:exec(query)
+
+    if #invoices == 0 then
+        print("No invoice found with ID: " .. invoiceId)
+        return
+    end
+
+    for _, row in ipairs(invoices) do
+        print("InvoiceID: " .. (row.InvoiceID or "N/A"))
+        print("RequestorName: " .. (row.RequestorName or "N/A"))
+        print("RequestorWallet: " .. (row.RequestorWallet or "N/A"))
+        print("RequesteeWallet: " .. (row.RequesteeWallet or "N/A"))
+        print("Timestamp: " .. (row.Timestamp or "N/A"))
+        print("InvoiceNote: " .. (row.InvoiceNote or "N/A"))
+        print("Amount: " .. (row.Amount or "N/A"))
+        print("Status: " .. (row.Status or "N/A"))
+        print("--------------------------------------------------")
+    end
+end
 
 
 local function printAllUsers()
@@ -292,6 +315,8 @@ Handlers.add("GetInvoiceById", "Get-Invoice-By-Id", function (msg)
     print("Fetching invoice with ID: " .. invoiceId)
     local invoice = dbAdmin:exec(query)
 
+    printInvoiceById( invoiceId );
+
     if #invoice == 0 then
         print("No invoice found with ID: " .. invoiceId)
         Send({ Target = msg.From, Data = json.encode({ error = "No invoice found with the provided ID." }) })
@@ -304,14 +329,14 @@ end)
 
 
 
-Handlers.add("PayInvoice", "Pay-Invoice", function (msg)
+-- Handlers.add("PayInvoice", "Pay-Invoice", function (msg)
     
-    print("PayInvoice" )
+--     print("PayInvoice" )
 
-    -- get the invoice from invoiceId
-    -- make sure the sender is the RequesteeWallet
-    -- update the invoice status to "Paid"
-end)
+--     -- get the invoice from invoiceId
+--     -- make sure the sender is the RequesteeWallet
+--     -- update the invoice status to "Paid"
+-- end)
 
 Handlers.add(
     "Credit-Notice",
@@ -347,8 +372,6 @@ Handlers.add(
         local requesteeWallet = invoice[1].RequesteeWallet
         local requestorWallet = invoice[1].RequestorWallet
 
-        print( "Invoice Amount: " .. invoiceAmount )
-
         -- if sender ~= requesteeWallet then
         --     print("Sender does not match the RequesteeWallet for invoice " .. invoiceId)
         --     return
@@ -366,7 +389,7 @@ Handlers.add(
 
             -- Pay The Requestor
             print( "Sending Payment To: " .. requestorWallet  )
-            Send({ Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8", Action = "Transfer", Quantity = invoiceAmount, Recipient = requestorWallet })
+            Send({ Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8", Action = "Transfer", Quantity = "" .. invoiceAmount, Recipient = requestorWallet })
 
         else
             print("Payment does not match the invoice amount. Received: " .. quantity .. ", Expected: " .. invoiceAmount)

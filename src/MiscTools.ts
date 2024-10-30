@@ -54,7 +54,7 @@ export const GetTableImgSource = (invoice: Invoice, address: string) => {
     }
 
     if( invoice.Status.toLowerCase() === "pending" ) {
-        return "./images/Request.svg";
+        return "./images/Pay.svg";
         
         // if( Invoice.RequestorWallet ) {
         //     return "./images/Request.svg";
@@ -62,36 +62,36 @@ export const GetTableImgSource = (invoice: Invoice, address: string) => {
         //     return "./images/Request.svg";
         // }
     }
-    return "./images/Request.svg";
+    return "./images/Pay.svg";
   }
 
-export const GetQARBalance = async (address: string): Promise<number> => { 
-    if (address) {
-        console.log( "Fetching balance for :" + address);
-        try {
-            const messageResponse = await dryrun({
-                process: QAR,
-                tags: [
-                    { name: 'Action', value: 'Balance' },
-                    { name: 'Recipient', value: address },
-                ],
-            });
+// export const GetQARBalance = async (address: string): Promise<number> => { 
+//     if (address) {
+//         console.log( "Fetching balance for :" + address);
+//         try {
+//             const messageResponse = await dryrun({
+//                 process: QAR,
+//                 tags: [
+//                     { name: 'Action', value: 'Balance' },
+//                     { name: 'Recipient', value: address },
+//                 ],
+//             });
 
-            console.log("MessageResponse: ", messageResponse);
+//             console.log("MessageResponse: ", messageResponse);
 
-            const balanceTag = messageResponse.Messages[0].Tags.find((tag: Tag) => tag.name === 'Balance')
-            const balance = balanceTag ? parseFloat((balanceTag.value / 1000).toFixed(4)) : 0;
-            return balance;
+//             const balanceTag = messageResponse.Messages[0].Tags.find((tag: Tag) => tag.name === 'Balance')
+//             const balance = balanceTag ? parseFloat((balanceTag.value / 1000).toFixed(4)) : 0;
+//             return balance;
 
-        } catch (error) {
-            console.error(error);
-            return 0;
-        }
-    } else {
-        console.log("No address provided.");
-        return 0;
-    }
-};
+//         } catch (error) {
+//             console.error(error);
+//             return 0;
+//         }
+//     } else {
+//         console.log("No address provided.");
+//         return 0;
+//     }
+// };
 
 export const SendProcessMessage = async (action: string, data: string ): Promise<string> => { 
     
@@ -145,6 +145,8 @@ export const SendProcessDryrun = async (action: string, data: string ): Promise<
     
         if (dryrunResult && dryrunResult.Messages && dryrunResult.Messages.length > 0) {
             const message = dryrunResult.Messages[0];
+
+            console.log( "Message: " , message )
     
             // Example: Extract specific fields like "Anchor" or iterate over Tags
             console.log("Anchor: ", message.Anchor);
@@ -328,5 +330,32 @@ export const SendInvoicePayment = async ( sender : string, invoiceId: string, am
         return "Success";
     } catch (error) {
         return "Error";
+    }
+};
+
+export const GetQARBalance = async (address: string): Promise<number> => { 
+    if (address) {
+        try {
+            const messageResponse = await dryrun({
+                process: QAR,
+                tags: [
+                    { name: 'Action', value: 'Balance' },
+                    { name: 'Recipient', value: address },
+                    { name: 'Target', value: address },
+                ],
+            });
+            console.log( "messageResponse: " ,messageResponse );
+            const balanceTag = messageResponse.Messages[0].Tags.find((tag: Tag) => tag.name === 'Balance')
+            const balance = balanceTag ? balanceTag.value : 0;
+            console.log( "Balance: " , balance );
+            return balance;
+
+        } catch (error) {
+            console.error(error);
+            return 0;
+        }
+    } else {
+        console.log("No address provided.");
+        return 0;
     }
 };

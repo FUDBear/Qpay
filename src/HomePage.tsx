@@ -33,7 +33,24 @@ function HomePage() {
         { ADDRESS === 'disconnected' ? 
         <></> : <>
         <Breadcrumbs/>
+
+        {/* <div className="p-2 mx-auto">
+            <div className="flex items-center">
+            <img
+              src={"./images/Qpay Logo.svg"}
+              alt="QPay Logo"
+              className="w-full h-[50px] mb-2"
+            />
+            </div>
+        </div> */}
+
         <InvoicesTable />
+
+        <div className="flex items-center justify-between mt-4">
+            <img src={"./images/Qpay Logo.svg"} alt="QPay Logo" className="w-full h-[30px]" />
+          </div>
+
+        
         </> }
 
         {/* <TesterButtons /> */}
