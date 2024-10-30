@@ -28,7 +28,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "bundlr upload-dir ./build -h https://node2.bundlr.network --wallet ./Users/joshuaburleson/Desktop/arweave-keyfile-eqWPXgEngDqBptVFmSlJT0YC9wgyAD4U8l1wrqKu_WE.json -c arweave --index-file index.html --no-confirmation"
   },
   "eslintConfig": {
     "extends": [
