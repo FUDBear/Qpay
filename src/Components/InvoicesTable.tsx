@@ -45,9 +45,14 @@ function InvoicesTable() {
         
         <Link to="/invoicecreation/">
         
-          <button className="flex items-center bg-[#4318FF] rounded-xl text-white font-semibold py-2 px-2 hover:bg-[#4936B2] transition duration-300 ease-in-out">
-            <img src={'../images/note_add.svg'} alt="New Invoice" className="w-6 h-6" />
+        <div className="relative flex items-center group">
+          <button className="flex items-center rounded-xl text-white font-semibold py-2 px-2 hover:bg-gray-200 transition duration-300 ease-in-out">
+            <img src={'./images/new_invoice.svg'} alt="New Invoice" className="w-6 h-6" />
           </button>
+          <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg">
+            New Invoice
+          </span>
+        </div>
           
         </Link>
       </div>
