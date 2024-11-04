@@ -216,33 +216,17 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
 
     print("CreateNewInvoice" .. msg.Data )
 
-    -- data
     local data = json.decode(msg.Data)
-    
-    -- requestor name
     local requestor_name = data.RequestorName
-    
-    -- requestor wallet address (use RequestorAddress from the JSON)
-    local requestor_wallet = data.RequestorAddress
-
-    -- requestee wallet address (use RequesteeAddress from the JSON)
+    local requestor_wallet = msg.From
     local requestee_wallet = data.RequesteeAddress
-
-    -- timestamp
     local timestamp_ms = msg["Timestamp"]
     local timestamp_seconds = math.floor(timestamp_ms / 1000)
-
-    -- invoice note
     local invoice_note = data.Note
-
-    -- invoice amount
     local invoice_amount = data.Amount
-
-    -- invoice id
     local new_id = "INV-" .. timestamp_seconds
     local invoice_id = new_id
 
-    -- Create a Lua table to hold the invoice data
     local invoice = {
         InvoiceID = invoice_id,
         RequestorName = requestor_name,
@@ -254,20 +238,39 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
         Status = "Pending"
     }
 
-    -- Insert the invoice into the database
     insertInvoice(invoice)
 
-    -- Convert the Lua table to a JSON string
     local invoice_json = json.encode(invoice)
 
-    -- Print the JSON string
     print("Invoice JSON: " .. invoice_json)
 
     printAllInvoices()
 
-    -- Send the JSON back as the Data field
     Send({ Target = msg.From, Data = invoice_json })
 end)
+
+Handlers.add("DeleteInvoice", "Delete-Invoice", function (msg)
+
+    local data = json.decode(msg.Data)
+    local invoiceId = data.InvoiceID
+    local senderWallet = msg.From
+
+    print("DeleteInvoice: " .. invoiceId)
+
+    local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s' AND RequestorWallet = '%s';", invoiceId, senderWallet)
+    local invoice = dbAdmin:exec(query)
+
+    if #invoice == 0 then
+        print("No matching invoice found or sender (" .. senderWallet ..  ") is not authorized to delete.")
+        return
+    end
+
+    local deleteQuery = string.format("DELETE FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
+    dbAdmin:exec(deleteQuery)
+
+    print("Invoice " .. invoiceId .. " has been deleted.")
+end)
+
 
 Handlers.add("GetAddressInvoices", "Get-Address-Invoices", function (msg)
 

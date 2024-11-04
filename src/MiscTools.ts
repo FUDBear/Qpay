@@ -148,24 +148,20 @@ export const SendProcessDryrun = async (action: string, data: string ): Promise<
 
             console.log( "Message: " , message )
     
-            // Example: Extract specific fields like "Anchor" or iterate over Tags
             console.log("Anchor: ", message.Anchor);
             console.log("Target: ", message.Target);
             console.log("Timestamp: ", message.Timestamp);
     
-            // Define the type for each tag
             type Tag = {
               name: string;
               value: string;
             };
     
-            // If you want to extract a specific tag value, like "Ticker"
             const tickerTag = message.Tags.find((tag: Tag) => tag.name === "Ticker");
             const tickerValue = tickerTag ? tickerTag.value : "No Ticker";
     
             console.log("Ticker: ", tickerValue);
     
-            // Return any relevant information that you need
             return JSON.stringify({ anchor: message.Anchor, target: message.Target, ticker: tickerValue });
 
         } else {
@@ -177,34 +173,6 @@ export const SendProcessDryrun = async (action: string, data: string ): Promise<
         console.log('There was an error during dryrun: ' + error);
         return "Error";
     }
-    
-    
-    
-    // console.log("SendProcessDryrun: " + action + " : " + data);
-    
-    // try {
-        
-    //     const dryrunResult = await dryrun({
-    //         process: QAR,
-    //         tags: [
-    //             { name: 'Action', value: action },
-    //         ],
-    //         data: data,
-    //         signer: createDataItemSigner(window.arweaveWallet),
-    //     });
-
-    //     if (dryrunResult && dryrunResult.Messages && dryrunResult.Messages.length > 0) {
-    //         console.log("Dryrun Message: ", dryrunResult.Messages[0]);
-    //         return dryrunResult.Messages[0]["Name"];
-    //     } else {
-    //         console.log("No response from dryrun!");
-    //         return "Got no response from dryrun!";
-    //     }
-
-    // } catch (error) {
-    //     console.log('There was an error during dryrun: ' + error);
-    //     return "Error";
-    // }
 };
 
 

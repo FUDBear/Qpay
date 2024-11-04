@@ -4,8 +4,10 @@ import { useGlobalContext } from '../GlobalProvider';
 import { SendPayMessage, FormatBalance } from '../MiscTools';
 import Breadcrumbs from './Breadcrumbs';
 import { debug } from 'console';
+import Swal from 'sweetalert2';
 
 function InvoiceCreation() {
+
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 
@@ -13,6 +15,32 @@ function InvoiceCreation() {
   const [requesteeAddress, setRequesteeAddress] = useState("");
   const [requestedAmount, setRequestedAmount] = useState("0.000");
   const [note, setNote] = useState("");
+
+
+  const showSuccess = () => {
+      Swal.fire({
+        title: 'Success!',
+        text: 'Your invoice has been successfully created',
+        color: "black",
+        icon: 'success',
+        confirmButtonText: 'Done',
+        confirmButtonColor: '#4318FF',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/");
+        } 
+      });
+  };
+
+  const showFail = () => {
+      Swal.fire({
+        title: 'Invoice Error',
+        text: 'Please fill out all fields or check your connection',
+        color: "black",
+        icon: 'error',
+        confirmButtonText: 'Done',
+      });
+  };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let inputValue = e.target.value;
@@ -32,9 +60,13 @@ function InvoiceCreation() {
   };
 
   const handleCreateInvoice = async () => {
+    if (!requestorName || !requesteeAddress || !requestedAmount || !note) {
+      showFail();
+      return;
+    }
+
     try {
       if (ADDRESS !== 'disconnected' && window.arweaveWallet) {
-
         const scaledAmount = (parseFloat(requestedAmount) * 1e12).toFixed(0);
 
         const newInvoice = {
@@ -46,22 +78,18 @@ function InvoiceCreation() {
           Currency: "qAR",
         };
 
-        console.log( newInvoice );
+        console.log(newInvoice);
 
         const result = await SendPayMessage("Create-New-Invoice", JSON.stringify(newInvoice));
         console.log("Result: ", result);
-        alert("Invoice created successfully!");
-
-        if (result) {
-          navigate("/");
-        }
+        showSuccess();
 
       } else {
         console.log("ArConnect is not installed.");
       }
     } catch (error) {
       console.error("Failed to create invoice: ", error);
-      alert("Error creating invoice.");
+      showFail();
     }
   };
 
@@ -82,6 +110,7 @@ function InvoiceCreation() {
                 onChange={(e) => setRequestorName(e.target.value)}
                 className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
                 placeholder="Enter requestor name"
+                required
             />
             </div>
 
@@ -93,6 +122,7 @@ function InvoiceCreation() {
                 onChange={(e) => setRequesteeAddress(e.target.value)}
                 className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
                 placeholder="Enter requestee address"
+                required
             />
             </div>
 
@@ -104,6 +134,7 @@ function InvoiceCreation() {
                 onChange={handleAmountChange}
                 className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
                 placeholder="Enter requested amount"
+                required
             />
             </div>
 
