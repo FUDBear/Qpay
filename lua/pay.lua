@@ -15,6 +15,7 @@ local INVOICES = [[
     RequestorWallet TEXT,
     RequesteeWallet TEXT,
     Timestamp INTEGER,
+    PaidTimestamp INTEGER,
     InvoiceNote TEXT,
     Amount INTEGER,
     Status TEXT
@@ -23,8 +24,6 @@ local INVOICES = [[
 
 -- Note: Must Initialize the DB before using it
 function InitDb() 
-    -- db:exec(USERS)
-    -- db:exec(MESSAGES)
     db:exec(INVOICES)
     print("--InitDb--")
 end
@@ -90,6 +89,7 @@ local function printAllInvoices()
         print("RequestorWallet: " .. (row.RequestorWallet or "N/A"))
         print("RequesteeWallet: " .. (row.RequesteeWallet or "N/A"))
         print("Timestamp: " .. (row.Timestamp or "N/A"))
+        print("PaidTimestamp: " .. (row.PaidTimestamp or "N/A"))
         print("InvoiceNote: " .. (row.InvoiceNote or "N/A"))
         print("Amount: " .. (row.Amount or "N/A"))
         print("Status: " .. (row.Status or "N/A"))
@@ -114,6 +114,7 @@ local function printInvoiceById(invoiceId)
         print("RequestorWallet: " .. (row.RequestorWallet or "N/A"))
         print("RequesteeWallet: " .. (row.RequesteeWallet or "N/A"))
         print("Timestamp: " .. (row.Timestamp or "N/A"))
+        print("PaidTimestamp: " .. (row.PaidTimestamp or "N/A"))
         print("InvoiceNote: " .. (row.InvoiceNote or "N/A"))
         print("Amount: " .. (row.Amount or "N/A"))
         print("Status: " .. (row.Status or "N/A"))
@@ -137,8 +138,6 @@ local function printAllUsers()
         print("User: PID: " .. (row.PID or "N/A") .. ", Nickname: " .. (row.Nickname or "N/A"))
     end
 end
-
-
 
 local function selectUserByPID(pid)
     local select_sql = 'SELECT * FROM Users WHERE PID = ?;'
@@ -172,17 +171,6 @@ Handlers.add("CleanTables", "Clean-Tables", function (msg)
 
     local query = string.format("DROP TABLE IF EXISTS %s;", "Invoices")
     dbAdmin:exec(query)
-
-end)
-
-Handlers.add("Tester", "Tester", function (msg)    
-    print( "Tester Hit!" ) 
-
-    local tables = dbAdmin:tables()
-    print("Tables:")
-    for _, table in ipairs(tables) do
-        print(table)
-    end
 end)
 
 Handlers.add("AddTable", "AddTable", function (msg)    
@@ -194,22 +182,6 @@ Handlers.add("AddTable", "AddTable", function (msg)
         print("dbAdmin is nil")
     end
 
-end)
-
-Handlers.add("GetUsers", "GetUsers", function (msg)  
-    
-    -- Assuming msg["Timestamp"] is in milliseconds
-    local timestamp_ms = msg["Timestamp"]
-    local timestamp_seconds = math.floor(timestamp_ms / 1000)
-
-    -- Print the timestamp in seconds
-    print("Timestamp in seconds: " .. timestamp_seconds)
-
-    -- printAllUsers()
-    Send({ Target = msg.From, Data = "" .. timestamp_seconds })
-
-    -- msg.reply({Data = "Hello " .. msg.Data or "bob"})
-    -- Handlers.utils.reply("Get Dem Users")(msg.From)
 end)
 
 Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
@@ -302,7 +274,7 @@ Handlers.add("GetInvoiceById", "Get-Invoice-By-Id", function (msg)
     local data = json.decode(msg.Data)
     local invoiceId = data.InvoiceID
 
-    -- Doubel check the msg.Form is either the Requestor or Requestee?
+    -- Check the msg.From is either the Requestor or Requestee. [Disabled for demo]
 
     if not invoiceId then
         print("No InvoiceID provided.")
@@ -330,16 +302,6 @@ Handlers.add("GetInvoiceById", "Get-Invoice-By-Id", function (msg)
     Send({ Target = msg.From, Data = invoice_json })
 end)
 
-
-
--- Handlers.add("PayInvoice", "Pay-Invoice", function (msg)
-    
---     print("PayInvoice" )
-
---     -- get the invoice from invoiceId
---     -- make sure the sender is the RequesteeWallet
---     -- update the invoice status to "Paid"
--- end)
 
 Handlers.add(
     "Credit-Notice",
@@ -375,22 +337,19 @@ Handlers.add(
         local requesteeWallet = invoice[1].RequesteeWallet
         local requestorWallet = invoice[1].RequestorWallet
 
-        -- if sender ~= requesteeWallet then
-        --     print("Sender does not match the RequesteeWallet for invoice " .. invoiceId)
-        --     return
-        -- end
-
         if tonumber(quantity) == tonumber(invoiceAmount) then
             print("Payment matches the invoice amount.")
 
+            local timestamp_ms = msg["Timestamp"]
+            local timestamp_seconds = math.floor(timestamp_ms / 1000)
+
             local updateQuery = string.format([[
-                UPDATE Invoices SET Status = "Paid" WHERE InvoiceID = "%s";
-            ]], invoiceId)
+                UPDATE Invoices SET Status = "Paid", PaidTimestamp = %d WHERE InvoiceID = "%s";
+            ]], timestamp_seconds, invoiceId)
             
             dbAdmin:exec(updateQuery)
             print("Invoice " .. invoiceId .. " has been marked as Paid.")
 
-            -- Pay The Requestor
             print( "Sending Payment To: " .. requestorWallet  )
             Send({ Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8", Action = "Transfer", Quantity = "" .. invoiceAmount, Recipient = requestorWallet })
 

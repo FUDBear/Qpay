@@ -86,7 +86,7 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
       
       <div className="flex flex-col min-w-[100px] h-0 items-center justify-end"></div>
 
-      {invoice.Status === "Paid" ? (
+      {invoice.Status === "Paid" ? (  
           <div className="items-center">
             <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-semibold">Paid</span>
           </div>

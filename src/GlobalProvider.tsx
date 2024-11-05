@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 interface GlobalContextType {
   ADDRESS: string;
   setADDRESS: React.Dispatch<React.SetStateAction<string>>;
+  QARBALANCE: number | null;
+  setQARBALANCE: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
@@ -10,12 +12,15 @@ const GlobalContext = createContext<GlobalContextType | null>(null);
 const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   
   const [ADDRESS, setADDRESS] = useState<string>('disconnected');
+  const [QARBALANCE, setQARBALANCE] = useState<number | null>(null);
 
   return (
     <GlobalContext.Provider
       value={{
         ADDRESS: ADDRESS,
-        setADDRESS: setADDRESS
+        setADDRESS: setADDRESS,
+        QARBALANCE: QARBALANCE,
+        setQARBALANCE: setQARBALANCE
       }}
     >
       {children}

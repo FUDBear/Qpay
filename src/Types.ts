@@ -7,6 +7,7 @@ export type Invoice = {
     Currency: string;
     Status: string;
     Timestamp: string;
+    PaidTimestamp: string;
     InvoiceNote: string;
   };
   

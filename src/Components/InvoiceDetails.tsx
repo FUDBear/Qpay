@@ -14,13 +14,12 @@ import Swal from 'sweetalert2';
 
 function InvoiceDetails() {
 
-  const { ADDRESS } = useGlobalContext();
+  const { ADDRESS, QARBALANCE, setQARBALANCE } = useGlobalContext();
   const navigate = useNavigate();
 
   const { id } = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
-  const [balance, setBalance] = useState(0);
 
   const [isOwner, setIsOwner] = useState(false);
 
@@ -69,13 +68,11 @@ function InvoiceDetails() {
     fetchInvoiceDetails();
   }, [id]);
 
-
-  useEffect(() => {
+  const getBalance = async () => {
     const fetchBalance = async () => {
       try {
         const result = await GetQARBalance(ADDRESS);
-        setBalance( FormatBalance(result) );
-
+        setQARBALANCE( FormatBalance(result) );
 
       } catch (error) {
         console.error("Failed to fetch balance:", error);
@@ -83,14 +80,16 @@ function InvoiceDetails() {
     };
 
     fetchBalance();
-  }, [id]);
+  };
 
   const handlePayInvoice = async () => {
     if (invoice?.Status === 'Pending') {
       try {
         const paymentResult = await SendInvoicePayment(invoice.RequesteeWallet, invoice.InvoiceID, invoice.Amount.toString());
         console.log("Payment result:", paymentResult);
-        setInvoice((prev) => prev ? { ...prev, Status: 'Paid' } : null);
+        setInvoice((prev) => prev ? { ...prev, Status: 'Paid', PaidTimestamp: Math.floor(Date.now() / 1000).toString()  } : null);
+        getBalance();
+
       } catch (error) {
         console.error("Failed to pay invoice:", error);
       }
@@ -119,7 +118,11 @@ function InvoiceDetails() {
 
           const result = await SendPayMessage("Delete-Invoice", JSON.stringify(data));
           console.log("Result: ", result);
-        
+
+          if(result)
+          {
+
+          }
 
         } else {
           console.log("ArConnect is not installed.");
@@ -129,7 +132,6 @@ function InvoiceDetails() {
       }
     } catch (error) {
       console.error("Failed to create invoice: ", error);
-      // alert("Error creating invoice.");
     }
   };
   
@@ -252,8 +254,13 @@ function InvoiceDetails() {
             </div>
 
             {invoice.Status === "Paid" ? (
-              <div className="items-start">
-                <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-semibold">Paid</span>
+              <div className="relative flex items-center group">
+                <div className="items-center">
+                  <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-semibold">Paid</span>
+                </div>
+                <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50">
+                  {ConvertTimestampToDateTime(invoice.PaidTimestamp)}
+                </span>
               </div>
             ) : (
               <div className="items-start">
@@ -263,7 +270,7 @@ function InvoiceDetails() {
             )}
           </div>
 
-          {invoice.Status === 'Pending' && (
+          {invoice.Status === 'Pending' && invoice.RequestorWallet !== ADDRESS  &&(
             
             <div className="flex flex-col items-center mb-2">
               <button
@@ -273,7 +280,7 @@ function InvoiceDetails() {
                 Pay Invoice
               </button>
               
-              <span className="text-sm text-[#A3AED0]">Balance: {balance} qAR</span>
+              <span className="text-sm text-[#A3AED0]">Balance: {QARBALANCE} qAR</span>
             </div>
             
           )}
