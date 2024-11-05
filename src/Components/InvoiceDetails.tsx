@@ -91,7 +91,7 @@ function InvoiceDetails() {
         getBalance();
 
       } catch (error) {
-        console.error("Failed to pay invoice:", error);
+        console.error("Failed to pay invoice:", error); 
       }
     }
   };
