@@ -27,7 +27,7 @@ function InvoicesTable() {
         
         setInvoices(invoicesWithImages);
       } catch (error) {
-        console.error("Failed to fetch invoices:", error);
+        console.log("Failed to fetch invoices:", error);
       } finally {
         setLoading(false);
       }

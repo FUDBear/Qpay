@@ -3,7 +3,7 @@ import { PermissionType } from 'arconnect';
 import {Invoice} from "./Types"
 
 const QAR = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8";
-const ASTROPAY = "2JGFChGEpgmOuXuR48w4N_YnNmi-4Gv5e6jrzUOGvK4";
+const ASTROPAY = "cbLiv_6bsPlIIObQhsaZlY4DxCFg-XmCuQLuVF9WsS8";
 
 type Tag = {
     name: string;
