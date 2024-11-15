@@ -47,6 +47,31 @@ function InvoiceDetails() {
       });
   };
 
+  const showSuccess = () => {
+    Swal.fire({
+      title: 'Success!',
+      text: 'Your invoice has been successfully paid',
+      color: "black",
+      icon: 'success',
+      confirmButtonText: 'Done',
+      confirmButtonColor: '#4318FF',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate("/");
+      }
+    });
+  };
+
+  const showFail = () => {
+    Swal.fire({
+      title: 'Invoice Error',
+      text: 'Payment failed',
+      color: "black",
+      icon: 'error',
+      confirmButtonText: 'Done',
+    });
+  };
+
   useEffect(() => {
     const fetchOwnership = async () => {
       const result = await checkOwner();
@@ -121,6 +146,13 @@ function InvoiceDetails() {
         console.log("Payment result:", paymentResult);
         setInvoice((prev) => prev ? { ...prev, Status: 'Paid', PaidTimestamp: Math.floor(Date.now() / 1000).toString()  } : null);
         getBalance();
+
+        if(paymentResult === "Success") {
+          showSuccess(); // Should be confirm, not success
+        } else {
+          showFail();
+        }
+
       } catch (error) {
         console.error("Failed to pay invoice:", error);
       }

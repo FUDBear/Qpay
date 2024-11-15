@@ -106,7 +106,7 @@ function InvoiceCreation() {
 
         const result = await SendPayMessage("Create-New-Invoice", JSON.stringify(newInvoice));
         console.log("Result: ", result);
-        // showSuccess();
+        showSuccess();
       } else {
         console.log("ArConnect is not installed.");
       }
