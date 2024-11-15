@@ -35,10 +35,16 @@ export const FormatBalanceDecimal = (balance: number): string => {
     return qarBalance.toFixed(12);
   };
   
-export const TruncateAddress = (address: string): string => {
-    if (address.length <= 8) return address;
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
-  }
+  export const TruncateAddress = (address: string | undefined) => {
+    if (!address) {
+        return "Undefined";
+    }
+    if (address.length <= 10) {
+        return address;
+    }
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+};
+
 
 export const ConvertTimestampToDateTime = (timestamp: string) => {
     const date = new Date(parseInt(timestamp, 10) * 1000);

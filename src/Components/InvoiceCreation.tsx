@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPayMessage, FormatBalance } from '../MiscTools';
-import { RequesteeCardData } from '../Types';
+import { RecieverCardData } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import RequesteeCard from './RequesteeCard';
@@ -12,14 +12,14 @@ function InvoiceCreation() {
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 
-  const [requestorName, setRequestorName] = useState("");
-  const [requestees, setRequestees] = useState<RequesteeCardData[]>([
+  const [receiverName, setReceiverName] = useState("");
+  const [senders, setSenders] = useState<RecieverCardData[]>([
     {
       Address: "",
       Amount: "0.000",
       Index: 0,
-      UpdateRequestee: (key, value) => handleUpdateRequestee(0, key, value),
-      RemoveRequestee: () => handleRemoveRequestee(0),
+      UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
+      RemoveReciever: () => handleRemoveRequestee(0),
     }
   ]);
   const [note, setNote] = useState("");
@@ -59,31 +59,31 @@ function InvoiceCreation() {
     });
   };
 
-  const handleUpdateRequestee = (index: number, key: keyof RequesteeCardData, value: string) => {
-    setRequestees(prev =>
+  const handleUpdateRequestee = (index: number, key: keyof RecieverCardData, value: string) => {
+    setSenders(prev =>
       prev.map((req, i) => (i === index ? { ...req, [key]: value } : req))
     );
   };
 
   const handleRemoveRequestee = (index: number) => {
-    if (requestees.length > 1) {
-      setRequestees(requestees.filter((_, i) => i !== index));
+    if (senders.length > 1) {
+      setSenders(senders.filter((_, i) => i !== index));
     }
   };
 
   const handleAddRequestee = () => {
-    const newRequestee: RequesteeCardData = {
+    const newRequestee: RecieverCardData = {
       Address: "",
       Amount: "0.000",
-      Index: requestees.length,
-      UpdateRequestee: (key, value) => handleUpdateRequestee(requestees.length, key, value),
-      RemoveRequestee: () => handleRemoveRequestee(requestees.length),
+      Index: senders.length,
+      UpdateReciever: (key, value) => handleUpdateRequestee(senders.length, key, value),
+      RemoveReciever: () => handleRemoveRequestee(senders.length),
     };
-    setRequestees([...requestees, newRequestee]);
+    setSenders([...senders, newRequestee]);
   };
 
   const handleCreateInvoice = async () => {
-    if (!requestorName || requestees.some(req => !req.Address || !req.Amount) || !note) {
+    if (!receiverName || senders.some(req => !req.Address || !req.Amount) || !note) {
       showFail();
       return;
     }
@@ -91,9 +91,9 @@ function InvoiceCreation() {
     try {
       if (ADDRESS !== 'disconnected' && window.arweaveWallet) {
         const newInvoice = {
-          RequestorName: requestorName,
-          RequestorAddress: ADDRESS,
-          Requestees: requestees.map(req => ({
+          ReceiverName: receiverName,
+          ReceiverWallet: ADDRESS,
+          Senders: senders.map(req => ({
             Address: req.Address,
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",
@@ -102,7 +102,7 @@ function InvoiceCreation() {
           Currency: "qAR",
         };
 
-        console.log(newInvoice);
+        console.log("New Invoice: ", newInvoice);
 
         const result = await SendPayMessage("Create-New-Invoice", JSON.stringify(newInvoice));
         console.log("Result: ", result);
@@ -185,8 +185,8 @@ function InvoiceCreation() {
             <label className="block text-gray-700 font-bold mb-2">Your Name</label>
             <input
               type="text"
-              value={requestorName}
-              onChange={(e) => setRequestorName(e.target.value)}
+              value={receiverName}
+              onChange={(e) => setReceiverName(e.target.value)}
               className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
               placeholder="Enter requestor name"
               required
@@ -194,7 +194,7 @@ function InvoiceCreation() {
           </div>
 
           <AnimatePresence>
-            {requestees.map((requestee, index) => (
+            {senders.map((requestee, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.1 }}
@@ -207,8 +207,8 @@ function InvoiceCreation() {
                   Address={requestee.Address}
                   Amount={requestee.Amount}
                   Index={index}
-                  UpdateRequestee={(key, value) => handleUpdateRequestee(index, key, value)}
-                  RemoveRequestee={() => handleRemoveRequestee(index)}
+                  UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
+                  RemoveReciever={() => handleRemoveRequestee(index)}
                 />
               </motion.div>
             ))}

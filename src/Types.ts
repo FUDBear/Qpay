@@ -1,8 +1,10 @@
 export type Invoice = {
     InvoiceID: string;
-    RequestorName: string;
-    RequestorWallet: string;
-    Requestees: Requestee[];
+    InvoiceType: string;
+    Category: string;
+    ReceiverName: string;
+    ReceiverWallet: string;
+    Senders: Sender[];
     Amount: number;
     Currency: string;
     Status: string;
@@ -11,7 +13,7 @@ export type Invoice = {
     InvoiceNote: string;
   };
 
-  export type Requestee = {
+  export type Sender = {
     Address: string;
     Amount: string;
     Status: string;
@@ -37,12 +39,12 @@ export type RequesteeCardProps = {
   setAmount: (amount: string) => void;
 };
 
-export type RequesteeCardData = {
+export type RecieverCardData = {
   Address: string;
   Amount: string;
   Index: number;
-  UpdateRequestee: (key: keyof RequesteeCardData, value: string) => void;
-  RemoveRequestee: () => void;
+  UpdateReciever: (key: keyof RecieverCardData, value: string) => void;
+  RemoveReciever: () => void;
 };
 
   

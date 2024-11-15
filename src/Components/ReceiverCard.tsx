@@ -1,8 +1,8 @@
 import React from 'react';
-import { RequesteeCardData } from "../Types";
+import { RecieverCardData } from "../Types";
 import Swal from 'sweetalert2';
 
-const RecieverCard: React.FC<RequesteeCardData> = ({ Address, Amount, UpdateRequestee, RemoveRequestee, Index}) => {
+const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateReciever: UpdateRequestee, RemoveReciever: RemoveRequestee, Index}) => {
   const showDeleteConfirm = () => {
 
     Swal.fire({
@@ -39,7 +39,7 @@ const RecieverCard: React.FC<RequesteeCardData> = ({ Address, Amount, UpdateRequ
           value={Address}
           onChange={(e) => UpdateRequestee("Address", e.target.value)}
           className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
-          placeholder="Enter requestee address"
+          placeholder="Enter Receiver Address"
           required
         />
       </div>
@@ -56,7 +56,7 @@ const RecieverCard: React.FC<RequesteeCardData> = ({ Address, Amount, UpdateRequ
             }
             }}
             className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
-            placeholder="Enter requested amount"
+            placeholder="Enter Amount To Pay"
             required
         />
     </div>

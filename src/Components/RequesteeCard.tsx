@@ -1,8 +1,8 @@
 import React from 'react';
-import { RequesteeCardData } from "../Types";
+import { RecieverCardData } from "../Types";
 import Swal from 'sweetalert2';
 
-const RequesteeCard: React.FC<RequesteeCardData> = ({ Address, Amount, UpdateRequestee, RemoveRequestee, Index}) => {
+const RequesteeCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateReciever: UpdateRequestee, RemoveReciever: RemoveRequestee, Index}) => {
   const showDeleteConfirm = () => {
 
     Swal.fire({

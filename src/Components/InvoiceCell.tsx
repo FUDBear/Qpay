@@ -24,44 +24,6 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
   };
 
   const [isHighlighted, setIsHighlighted ] = useState(false);
-
-  // const isHighlighted = invoice.RequesteeAddress === ADDRESS;
-
-  // useEffect(() => {
-
-  //   const fetchToken = async () => {
-
-  //     const fetchTokenInfo = async () => {
-        
-  //       try {
-  //         const result = await GetTokenInfo();
-  //         const parsedResult: TokenInfo = JSON.parse(result);
-  //         setTokenInfo( parsedResult );
-  //         console.log( "Token Info" ,  parsedResult );
-  //       } catch (error) {
-  //         console.error("Failed to fetch invoices:", error);
-  //       } finally {
-  //         setTokenInfo({} as TokenInfo);
-  //       }
-  //     };
-  //     fetchTokenInfo();
-  //   }
-
-  // }, [invoice.Currency]);
-
-  // useEffect(() => {
-  //   console.log("Invoice object:", invoice);
-  //   console.log("Requestees:", invoice.Requestees);
-  //   console.log("Address:", ADDRESS);
-  
-  //   const isRequestee = invoice.Requestees.some((requestee) => requestee.Address === ADDRESS);
-  
-  //   if (isRequestee) {
-  //     setIsHighlighted(true);
-  //   } else {
-  //     setIsHighlighted(false);
-  //   }
-  // }, [invoice, ADDRESS]);
   
   
 
@@ -88,8 +50,8 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
 
         
         <div className="flex flex-col">
-          <span className="font-semibold">{invoice.RequestorName}</span>
-          <span className="text-sm text-[#A3AED0]">{TruncateAddress(invoice.RequestorWallet)}</span>
+          <span className="font-semibold">{invoice.ReceiverName}</span>
+          <span className="text-sm text-[#A3AED0]">{TruncateAddress(invoice.ReceiverWallet)}</span>
           <span className="text-sm text-[#A3AED0]">{isHighlighted}</span>
 
         </div>

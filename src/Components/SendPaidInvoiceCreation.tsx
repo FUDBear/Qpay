@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPayMessage, FormatBalance } from '../MiscTools';
-import { RequesteeCardData } from '../Types';
+import { RecieverCardData } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import ReceiverCard from './ReceiverCard';
@@ -13,13 +13,13 @@ function SendPaidInvoiceCreation() {
   const navigate = useNavigate();
 
   const [requestorName, setRequestorName] = useState("");
-  const [requestees, setRequestees] = useState<RequesteeCardData[]>([
+  const [requestees, setRequestees] = useState<RecieverCardData[]>([
     {
       Address: "",
       Amount: "0.000",
       Index: 0,
-      UpdateRequestee: (key, value) => handleUpdateRequestee(0, key, value),
-      RemoveRequestee: () => handleRemoveRequestee(0),
+      UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
+      RemoveReciever: () => handleRemoveRequestee(0),
     }
   ]);
   const [note, setNote] = useState("");
@@ -59,7 +59,7 @@ function SendPaidInvoiceCreation() {
     });
   };
 
-  const handleUpdateRequestee = (index: number, key: keyof RequesteeCardData, value: string) => {
+  const handleUpdateRequestee = (index: number, key: keyof RecieverCardData, value: string) => {
     setRequestees(prev =>
       prev.map((req, i) => (i === index ? { ...req, [key]: value } : req))
     );
@@ -72,12 +72,12 @@ function SendPaidInvoiceCreation() {
   };
 
   const handleAddRequestee = () => {
-    const newRequestee: RequesteeCardData = {
+    const newRequestee: RecieverCardData = {
       Address: "",
       Amount: "0.000",
       Index: requestees.length,
-      UpdateRequestee: (key, value) => handleUpdateRequestee(requestees.length, key, value),
-      RemoveRequestee: () => handleRemoveRequestee(requestees.length),
+      UpdateReciever: (key, value) => handleUpdateRequestee(requestees.length, key, value),
+      RemoveReciever: () => handleRemoveRequestee(requestees.length),
     };
     setRequestees([...requestees, newRequestee]);
   };
@@ -134,7 +134,7 @@ function SendPaidInvoiceCreation() {
               value={requestorName}
               onChange={(e) => setRequestorName(e.target.value)}
               className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
-              placeholder="Enter requestor name"
+              placeholder="Enter Your Name"
               required
             />
           </div>
@@ -153,18 +153,18 @@ function SendPaidInvoiceCreation() {
                   Address={requestee.Address}
                   Amount={requestee.Amount}
                   Index={index}
-                  UpdateRequestee={(key, value) => handleUpdateRequestee(index, key, value)}
-                  RemoveRequestee={() => handleRemoveRequestee(index)}
+                  UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
+                  RemoveReciever={() => handleRemoveRequestee(index)}
                 />
               </motion.div>
             ))}
           </AnimatePresence>
 
-          <div className="flex items-center justify-around">
+          {/* <div className="flex items-center justify-around">
             <button onClick={handleAddRequestee} className="flex text-white rounded-full font-semibold hover:bg-slate-200 transition duration-300 ease-in-out">
               <img src={'./images/purple_icons/add_circle.svg'} alt="Add Invoice Requestee" className="w-8 h-8" />
             </button>
-          </div>
+          </div> */}
 
           <div>
             <label className="block text-gray-700 font-bold mb-2">Note</label>
