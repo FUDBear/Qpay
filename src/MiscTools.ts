@@ -3,7 +3,7 @@ import { PermissionType } from 'arconnect';
 import {Invoice} from "./Types"
 
 const QAR = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8";
-const ASTROPAY = "cbLiv_6bsPlIIObQhsaZlY4DxCFg-XmCuQLuVF9WsS8";
+const QPAY = "cbLiv_6bsPlIIObQhsaZlY4DxCFg-XmCuQLuVF9WsS8";
 
 type Tag = {
     name: string;
@@ -233,7 +233,7 @@ export const SendPayMessage = async (action: string, data: string ): Promise<str
 
     try {
         const getResult = await message({
-            process: ASTROPAY,
+            process: QPAY,
             tags: [
                 { name: 'Action', value: action },
             ],
@@ -242,7 +242,7 @@ export const SendPayMessage = async (action: string, data: string ): Promise<str
         });
         const { Messages, Error } = await result({
             message: getResult,
-            process: ASTROPAY,
+            process: QPAY,
         });
         if (Error) {
             console.log("Error:" + Error);
@@ -266,12 +266,14 @@ export const SendPayMessage = async (action: string, data: string ): Promise<str
 
 export const SendInvoicePayment = async ( sender : string, invoiceId: string, amount: string ): Promise<string> => { 
 
+    // verify balance with payment?
+
     try {
         const paymentData = await message({
             process: QAR,
             tags: [
                 { name: 'Action', value: 'Transfer' },
-                { name: 'Recipient', value: ASTROPAY },
+                { name: 'Recipient', value: QPAY },
                 { name: 'Quantity', value:  amount },
                 { name: 'Sender', value: sender },
                 { name: "X-[INVOICEID]", value: invoiceId },

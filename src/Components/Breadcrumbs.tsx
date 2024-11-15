@@ -8,6 +8,8 @@ function Breadcrumbs() {
   const pathNameMap: { [key: string]: string } = {
     invoicecreation: 'Invoice Creation',
     invoices: 'Invoices',
+    send: 'Send',
+    request: 'Request',
   };
 
   return (

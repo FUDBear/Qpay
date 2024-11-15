@@ -4,6 +4,7 @@ import { dryrun, message, createDataItemSigner, result  } from "@permaweb/aoconn
 import { PermissionType } from 'arconnect';
 import { useGlobalContext } from '../GlobalProvider';
 import { TruncateAddress } from "../MiscTools";
+import { motion } from 'framer-motion';
 
 function WalletButton() {
 
@@ -48,21 +49,21 @@ function WalletButton() {
           {
             ADDRESS !== "disconnected" ? (
               <div className="flex flex-col items-center">
-              <button
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.6 }}
                 onClick={disconnectWallet}
                 className="px-5 py-2 bg-[#4318FF] rounded-xl min-w-[100px] transition-colors bg-astro-primary text-white hover:bg-[#4936B2]"
               >
                 Disconnect
-              </button>
+              </motion.button>
               <span className="text-xs text-[#A3AED0]">{TruncateAddress(ADDRESS)}</span>
               </div>
             ) : (
-              <button
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.6 }}
                 onClick={connectWallet}
                 className="px-5 py-2 bg-[#4318FF] rounded-xl min-w-[100px] transition-colors bg-astro-primary text-white hover:bg-[#4936B2]"
               >
                 Connect
-              </button>
+              </motion.button>
             )
           }
         </div>

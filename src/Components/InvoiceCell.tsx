@@ -6,6 +6,7 @@ import { TruncateAddress, GetTokenInfo, FormatBalanceUSD, FormatBalanceDecimal,
  } from "../MiscTools";
 import { Invoice, TokenInfo } from "../Types";
 import BalanceTooltip from './BalanceTooltip';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type InvoiceCellProps = {
   invoice: Invoice;
@@ -48,16 +49,20 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
 
   // }, [invoice.Currency]);
 
-  useEffect(() => {
-    console.log("Invoice object:", invoice);
-    console.log("Req: " + invoice.RequesteeWallet + " vs " + ADDRESS);
+  // useEffect(() => {
+  //   console.log("Invoice object:", invoice);
+  //   console.log("Requestees:", invoice.Requestees);
+  //   console.log("Address:", ADDRESS);
   
-    if (invoice.RequesteeWallet === ADDRESS) {
-      setIsHighlighted(true);
-    } else {
-      setIsHighlighted(false);
-    }
-  }, [invoice, ADDRESS]);
+  //   const isRequestee = invoice.Requestees.some((requestee) => requestee.Address === ADDRESS);
+  
+  //   if (isRequestee) {
+  //     setIsHighlighted(true);
+  //   } else {
+  //     setIsHighlighted(false);
+  //   }
+  // }, [invoice, ADDRESS]);
+  
   
 
   return (
@@ -66,13 +71,20 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
       className={`cursor-pointer p-4 border-b hover:bg-gray-100 transition duration-200 ease-in-out flex items-center justify-between rounded-lg bg-white`}
     >
 
-{/* ${ isHighlighted ? 'bg-[#F0EDFF]' : 'bg-white'  } */}
+    {/* ${ isHighlighted ? 'bg-[#F0EDFF]' : 'bg-white'  } */}
 
       <div className="flex items-center space-x-4">
 
-        <div className="flex-shrink-0">
-          <img src={GetTableImgSource(invoice, ADDRESS)} alt="Invoice" className="w-12 h-12 rounded-full border-2 border-[#4318FF]" />
-        </div>
+      <div className="flex-shrink-0">
+        <motion.img
+          src={GetTableImgSource(invoice, ADDRESS)}
+          alt="Invoice"
+          className="w-12 h-12 rounded-full border-2 border-[#4318FF]"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+        />
+      </div>
 
         
         <div className="flex flex-col">

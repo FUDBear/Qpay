@@ -2,13 +2,19 @@ export type Invoice = {
     InvoiceID: string;
     RequestorName: string;
     RequestorWallet: string;
-    RequesteeWallet: string;
+    Requestees: Requestee[];
     Amount: number;
     Currency: string;
     Status: string;
     Timestamp: string;
     PaidTimestamp: string;
     InvoiceNote: string;
+  };
+
+  export type Requestee = {
+    Address: string;
+    Amount: string;
+    Status: string;
   };
   
   export type TokenInfo = {
@@ -31,11 +37,11 @@ export type RequesteeCardProps = {
   setAmount: (amount: string) => void;
 };
 
-export type Requestee = {
+export type RequesteeCardData = {
   Address: string;
   Amount: string;
   Index: number;
-  UpdateRequestee: (key: keyof Requestee, value: string) => void;
+  UpdateRequestee: (key: keyof RequesteeCardData, value: string) => void;
   RemoveRequestee: () => void;
 };
 
