@@ -400,7 +400,6 @@ Handlers.add(
             local timestamp_seconds = math.floor(timestamp_ms / 1000)
             matchingRequestee.PaidTimestamp = timestamp_seconds
 
-            -- Check if all requestees are now marked as "Paid"
             local allPaid = true
             for _, req in ipairs(requestees) do
                 if req.Status ~= "Paid" then
@@ -411,7 +410,6 @@ Handlers.add(
 
             local newInvoiceStatus = allPaid and "Paid" or "Pending"
 
-            -- Update the database with new status and requestees
             requesteesJson = json.encode(requestees)
             local updateQuery = string.format([[
                 UPDATE Invoices 
