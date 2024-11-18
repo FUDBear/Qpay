@@ -1,6 +1,6 @@
 import { dryrun, message, createDataItemSigner, result } from "@permaweb/aoconnect";
 import { PermissionType } from 'arconnect';
-import {Invoice} from "./Types"
+import {Invoice, PaidInvoiceData} from "./Types"
 
 const QAR = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8";
 const QPAY = "cbLiv_6bsPlIIObQhsaZlY4DxCFg-XmCuQLuVF9WsS8";
@@ -303,6 +303,36 @@ export const SendInvoicePayment = async ( sender : string, invoiceId: string, am
             // console.log("Debit-Notice Quantity: ", Messages[0].Tags["Quantity"]);
             // console.log("From: ", Messages[0].Target);
     }
+        return "Success";
+    } catch (error) {
+        return "Error";
+    }
+};
+
+export const SendPaidInvoice = async ( sender: string, quantity: string, data: string ): Promise<string> => { 
+
+    try {
+        const paymentData = await message({
+            process: QAR,
+            tags: [
+                { name: 'Action', value: 'Transfer' },
+                { name: 'Recipient', value: QPAY },
+                { name: 'Quantity', value:  quantity },
+                { name: 'Sender', value: sender },
+                { name: "X-[PAID_INVOICE]", value: data },
+            ],
+            signer: createDataItemSigner(window.arweaveWallet),
+        });
+        const { Messages, Error } = await result({
+            message: paymentData,
+            process: QAR,
+        });
+        if (Error) {
+            return "Error sending:" + Error;
+        }
+        if (!Messages || Messages.length === 0) {
+            return "No messages were returned from ao. Please try later."; 
+        }
         return "Success";
     } catch (error) {
         return "Error";

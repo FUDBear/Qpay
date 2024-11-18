@@ -13,7 +13,26 @@ export type Invoice = {
     InvoiceNote: string;
   };
 
+  export type PaidInvoiceData = {
+    InvoiceType: string;
+    Category: string;
+    SenderName: string;
+    SenderWallet: string;
+    Receivers: Reciever[];
+    Currency: string;
+    Status: string;
+    InvoiceNote: string;
+    Total: string;
+  };
+
   export type Sender = {
+    Name: string;
+    Address: string;
+    Amount: string;
+    Status: string;
+  };
+
+  export type Reciever = {
     Address: string;
     Amount: string;
     Status: string;

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
-import { SendPayMessage, FormatBalance } from '../MiscTools';
-import { RecieverCardData } from '../Types';
+import { SendPaidInvoice } from '../MiscTools';
+import { RecieverCardData, PaidInvoiceData } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import ReceiverCard from './ReceiverCard';
@@ -12,8 +12,17 @@ function SendPaidInvoiceCreation() {
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 
-  const [requestorName, setRequestorName] = useState("");
-  const [requestees, setRequestees] = useState<RecieverCardData[]>([
+  const [senderName, setSenderName] = useState("");
+  const [senderAmount, setSenderAmount] = useState("0.000");
+  // const [senders, setSenders] = Sender[]([
+  //   {
+  //     Name: "",
+  //     Address: "",
+  //     Amount: "0.000",
+  //     Status: "Pending",
+  //   }
+  // ]);
+  const [receivers, setReceivers] = useState<RecieverCardData[]>([
     {
       Address: "",
       Amount: "0.000",
@@ -60,14 +69,14 @@ function SendPaidInvoiceCreation() {
   };
 
   const handleUpdateRequestee = (index: number, key: keyof RecieverCardData, value: string) => {
-    setRequestees(prev =>
+    setReceivers(prev =>
       prev.map((req, i) => (i === index ? { ...req, [key]: value } : req))
     );
   };
 
   const handleRemoveRequestee = (index: number) => {
-    if (requestees.length > 1) {
-      setRequestees(requestees.filter((_, i) => i !== index));
+    if (receivers.length > 1) {
+      setReceivers(receivers.filter((_, i) => i !== index));
     }
   };
 
@@ -75,36 +84,57 @@ function SendPaidInvoiceCreation() {
     const newRequestee: RecieverCardData = {
       Address: "",
       Amount: "0.000",
-      Index: requestees.length,
-      UpdateReciever: (key, value) => handleUpdateRequestee(requestees.length, key, value),
-      RemoveReciever: () => handleRemoveRequestee(requestees.length),
+      Index: receivers.length,
+      UpdateReciever: (key, value) => handleUpdateRequestee(receivers.length, key, value),
+      RemoveReciever: () => handleRemoveRequestee(receivers.length),
     };
-    setRequestees([...requestees, newRequestee]);
+    setReceivers([...receivers, newRequestee]);
   };
 
   const handleCreateInvoice = async () => {
-    if (!requestorName || requestees.some(req => !req.Address || !req.Amount) || !note) {
+    if (!senderName || receivers.some(req => !req.Address || !req.Amount) || !note) {
       showFail();
       return;
     }
 
     try {
+      // Here the values are flipped, the requestor is the sender and the requestees are the receivers
       if (ADDRESS !== 'disconnected' && window.arweaveWallet) {
-        const newInvoice = {
-          RequestorName: requestorName,
-          RequestorAddress: ADDRESS,
-          Requestees: requestees.map(req => ({
+
+
+        // Create a new Sender
+        const newSender = { Name: senderName,  Address: ADDRESS, Amount: senderAmount, Status: "Pending" };
+
+        for (let i = 0; i < receivers.length; i++) {
+          const newReciever = { Address: receivers[i].Address, Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), Status: "Pending" };
+        }
+
+        let total = 0;
+        for(let i = 0; i < receivers.length; i++) {
+          total += parseFloat(receivers[i].Amount);
+        }
+        
+        const newInvoice : PaidInvoiceData = {
+
+          InvoiceType: "PrePaid",
+          Category: "Unknown",
+          SenderName: newSender.Name,
+          SenderWallet: newSender.Address,
+          Status: newSender.Status,
+          Receivers: receivers.map(req => ({
             Address: req.Address,
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",
           })),
-          Note: note,
+          Total: (total * 1e12).toFixed(0),
+          InvoiceNote: note,
           Currency: "qAR",
         };
 
-        console.log(newInvoice);
+        console.log("New PAID_INVOICE: ", JSON.stringify(newInvoice));
 
-        const result = await SendPayMessage("Create-New-Invoice", JSON.stringify(newInvoice));
+        const result = await SendPaidInvoice( newInvoice.SenderWallet, newInvoice.Total,
+           JSON.stringify(newInvoice));
         console.log("Result: ", result);
         showSuccess();
       } else {
@@ -131,8 +161,8 @@ function SendPaidInvoiceCreation() {
             <label className="block text-gray-700 font-bold mb-2">Your Name</label>
             <input
               type="text"
-              value={requestorName}
-              onChange={(e) => setRequestorName(e.target.value)}
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
               className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
               placeholder="Enter Your Name"
               required
@@ -140,7 +170,7 @@ function SendPaidInvoiceCreation() {
           </div>
 
           <AnimatePresence>
-            {requestees.map((requestee, index) => (
+            {receivers.map((r, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.1 }}
@@ -150,8 +180,8 @@ function SendPaidInvoiceCreation() {
                 className="flex items-center"
               >
                 <ReceiverCard
-                  Address={requestee.Address}
-                  Amount={requestee.Amount}
+                  Address={r.Address}
+                  Amount={r.Amount}
                   Index={index}
                   UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
                   RemoveReciever={() => handleRemoveRequestee(index)}
@@ -162,7 +192,7 @@ function SendPaidInvoiceCreation() {
 
           {/* <div className="flex items-center justify-around">
             <button onClick={handleAddRequestee} className="flex text-white rounded-full font-semibold hover:bg-slate-200 transition duration-300 ease-in-out">
-              <img src={'./images/purple_icons/add_circle.svg'} alt="Add Invoice Requestee" className="w-8 h-8" />
+              <img src={'./images/purple_icons/add_circle.svg'} alt="Add Invoice Reciever" className="w-8 h-8" />
             </button>
           </div> */}
 
