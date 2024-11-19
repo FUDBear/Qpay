@@ -122,6 +122,7 @@ function SendPaidInvoiceCreation() {
           SenderWallet: newSender.Address,
           Status: newSender.Status,
           Receivers: receivers.map(req => ({
+            Name: "",
             Address: req.Address,
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",

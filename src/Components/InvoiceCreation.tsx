@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPayMessage, FormatBalance } from '../MiscTools';
-import { RecieverCardData } from '../Types';
+import { RecieverCardData, Receiver } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import RequesteeCard from './RequesteeCard';
@@ -20,6 +20,14 @@ function InvoiceCreation() {
       Index: 0,
       UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
       RemoveReciever: () => handleRemoveRequestee(0),
+    }
+  ]);
+  const [receivers, setReceivers] = useState<Receiver[]>([
+    { 
+      Name: "",
+      Address: "",
+      Amount: "0.000",
+      Status: "Pending", 
     }
   ]);
   const [note, setNote] = useState("");
@@ -90,6 +98,10 @@ function InvoiceCreation() {
 
     try {
       if (ADDRESS !== 'disconnected' && window.arweaveWallet) {
+
+        // A fixed invoice w/ only 1 receiver
+        const totalAmount = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
+
         const newInvoice = {
           ReceiverName: receiverName,
           ReceiverWallet: ADDRESS,
@@ -98,6 +110,14 @@ function InvoiceCreation() {
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",
           })),
+          Receivers: [
+            {
+              Name: receiverName,
+              Address: ADDRESS,
+              Amount: (totalAmount * 1e12).toFixed(0),
+              Status: "Pending",
+            }
+          ],
           Note: note,
           Currency: "qAR",
         };
@@ -116,68 +136,21 @@ function InvoiceCreation() {
     }
   };
 
+  useEffect(() => {
+    setReceivers((prevReceivers) => {
+      const updatedReceivers = [...prevReceivers];
+      updatedReceivers[0] = { ...updatedReceivers[0], Name: receiverName };
+      return updatedReceivers;
+    });
+    console.log("Receivers: ", receivers);
+  } , [receiverName]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <Breadcrumbs />
 
       <div className="relative p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto">
-        {/* Invoice Type Dropdown positioned in the top-right corner */}
-        {/* <motion.nav
-          initial={false}
-          animate={isOpen ? "open" : "closed"}
-          className="absolute top-4 right-4" // Position in top-right corner
-        >
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center space-x-2"
-          >
-            <span>Menu</span>
-            <motion.div
-              variants={{
-                open: { rotate: 180 },
-                closed: { rotate: 0 }
-              }}
-              transition={{ duration: 0.2 }}
-              style={{ originY: 0.55 }}
-            >
-              <svg width="15" height="15" viewBox="0 0 20 20">
-                <path d="M0 7 L 20 7 L 10 16" />
-              </svg>
-            </motion.div>
-          </motion.button>
-          <motion.ul
-            variants={{
-              open: {
-                clipPath: "inset(0% 0% 0% 0% round 10px)",
-                transition: {
-                  type: "spring",
-                  bounce: 0,
-                  duration: 0.7,
-                  delayChildren: 0.3,
-                  staggerChildren: 0.05
-                }
-              },
-              closed: {
-                clipPath: "inset(10% 50% 90% 50% round 10px)",
-                transition: {
-                  type: "spring",
-                  bounce: 0,
-                  duration: 0.3
-                }
-              }
-            }}
-            style={{ pointerEvents: isOpen ? "auto" : "none" }}
-            className="bg-white shadow-md rounded-lg p-4 mt-2"
-          >
-            <motion.li variants={itemVariants}>Item 1</motion.li>
-            <motion.li variants={itemVariants}>Item 2</motion.li>
-            <motion.li variants={itemVariants}>Item 3</motion.li>
-            <motion.li variants={itemVariants}>Item 4</motion.li>
-            <motion.li variants={itemVariants}>Item 5</motion.li>
-          </motion.ul>
-        </motion.nav> */}
-
+        
         <h2 className="text-2xl font-semibold mb-4 text-[#2b3674]">Create Invoice</h2>
 
         <div className="space-y-4">

@@ -5,6 +5,7 @@ export type Invoice = {
     ReceiverName: string;
     ReceiverWallet: string;
     Senders: Sender[];
+    Receivers: Receiver[];
     Amount: number;
     Currency: string;
     Status: string;
@@ -18,7 +19,7 @@ export type Invoice = {
     Category: string;
     SenderName: string;
     SenderWallet: string;
-    Receivers: Reciever[];
+    Receivers: Receiver[];
     Currency: string;
     Status: string;
     InvoiceNote: string;
@@ -32,7 +33,8 @@ export type Invoice = {
     Status: string;
   };
 
-  export type Reciever = {
+  export type Receiver = {
+    Name: string;
     Address: string;
     Amount: string;
     Status: string;
