@@ -4,7 +4,7 @@ import { useGlobalContext } from '../GlobalProvider';
 import { TruncateAddress, GetTokenInfo, FormatBalanceUSD, FormatBalanceDecimal,
   GetTableImgSource
  } from "../MiscTools";
-import { Invoice, TokenInfo } from "../Types";
+import { Invoice, Receiver } from "../Types";
 import BalanceTooltip from './BalanceTooltip';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -17,15 +17,26 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 
-  // const [tokenInfo , setTokenInfo] = useState<TokenInfo>({} as TokenInfo);
+  const [isHighlighted, setIsHighlighted ] = useState(false);
+  const [parsedReceivers, setParsedReceivers] = useState<Receiver[]>([]);
 
   const handleClick = () => {
     navigate(`/${invoice.InvoiceID}`);
   };
 
-  const [isHighlighted, setIsHighlighted ] = useState(false);
-  
-  
+  useEffect(() => {
+    if (typeof invoice?.Receivers === "string") {
+      try {
+        const receiversArray: Receiver[] = JSON.parse(invoice.Receivers);
+        setParsedReceivers(receiversArray);
+      } catch (error) {
+        console.error("Failed to parse Receivers JSON:", error);
+        setParsedReceivers([]);
+      }
+    } else if (Array.isArray(invoice?.Receivers)) {
+      setParsedReceivers([]);
+    }
+  }, [invoice?.Receivers]);
 
   return (
     <div
@@ -50,8 +61,8 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
 
         
         <div className="flex flex-col">
-          <span className="font-semibold">{invoice.ReceiverName}</span>
-          <span className="text-sm text-[#A3AED0]">{TruncateAddress(invoice.ReceiverWallet)}</span>
+          <span className="font-semibold">{parsedReceivers[0]?.Name}</span>
+          <span className="text-sm text-[#A3AED0]">{TruncateAddress(parsedReceivers[0]?.Address)}</span>
           <span className="text-sm text-[#A3AED0]">{isHighlighted}</span>
 
         </div>

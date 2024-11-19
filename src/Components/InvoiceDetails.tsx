@@ -6,7 +6,7 @@ import { SendInvoicePayment, SendPayMessage, ConvertTimestampToDateTime,
   FormatBalanceDecimal, SendProcessMessage, FormatBalance, 
   GetQARBalance, TruncateAddress } from '../MiscTools';
 import ClipLoader from 'react-spinners/ClipLoader';
-import { Invoice, Sender } from "../Types";
+import { Invoice, Sender, Receiver } from "../Types";
 import Breadcrumbs from './Breadcrumbs';
 import CopyButton from './CopyButton';
 import QRCode from "react-qr-code";
@@ -21,6 +21,7 @@ function InvoiceDetails() {
   const { id } = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [parsedRequestees, setParsedRequestees] = useState<Sender[]>([]);
+  const [parsedReceivers, setParsedReceivers] = useState<Receiver[]>([]);
   const [requestee, setRequestee] = useState<Sender | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -109,6 +110,20 @@ function InvoiceDetails() {
       setParsedRequestees([]);
     }
   }, [invoice?.Senders]);
+
+  useEffect(() => {
+    if (typeof invoice?.Receivers === "string") {
+      try {
+        const receiversArray: Receiver[] = JSON.parse(invoice.Receivers);
+        setParsedReceivers(receiversArray);
+      } catch (error) {
+        console.error("Failed to parse Receivers JSON:", error);
+        setParsedReceivers([]);
+      }
+    } else if (Array.isArray(invoice?.Receivers)) {
+      setParsedReceivers([]);
+    }
+  }, [invoice?.Receivers]);
 
   useEffect(() => {
     const foundRequestee = parsedRequestees.find((requestee) => requestee.Address === ADDRESS);
@@ -267,16 +282,16 @@ function InvoiceDetails() {
             </motion.div>
           </div>
 
-          {/* Requester Wallet */}
+          {/* Receiver */}
           <div className="flex flex-col mb-2">
             <div className="flex flex-row items-center space-x-2">
               <img src={"./images/purple_icons/wallet.svg"} alt="date" className="w-4 h-4" />
-              <span className="font-semibold"> Reciever ({invoice.ReceiverName})</span>
+              <span className="font-semibold"> Reciever ({parsedReceivers[0]?.Name})</span>
             </div>
 
             <motion.div className="flex flex-row items-center space-x-2" whileHover={{ scale: 1.02 }} transition={{ type: "tween", stiffness: 100 }} >
-              <span className="text-sm text-[#A3AED0]">{invoice.ReceiverWallet}</span>
-              <CopyButton textToCopy={invoice.ReceiverWallet} />
+              <span className="text-sm text-[#A3AED0]">{parsedReceivers[0]?.Address}</span>
+              <CopyButton textToCopy={parsedReceivers[0]?.Address} />
             </motion.div>
           </div>
 
