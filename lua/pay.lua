@@ -274,15 +274,25 @@ function PayInvoice(invoiceId, sender, quantity, msg)
     local timestamp_ms = msg["Timestamp"]
     local timestamp_seconds = math.floor(timestamp_ms / 1000)
 
+    local allSendersPaid = true
+    for _, senderObj in ipairs(senders) do
+        if senderObj.Status ~= "Paid" then
+            allSendersPaid = false
+            break
+        end
+    end
+
+    local newInvoiceStatus = allSendersPaid and "Paid" or "Pending"
+
     sendersJson = json.encode(senders)
     local updateQuery = string.format([[
         UPDATE Invoices 
-        SET Senders = '%s', Status = "Pending"
+        SET Senders = '%s', Status = "%s", PaidTimestamp = %d
         WHERE InvoiceID = "%s";
-    ]], sendersJson, invoiceId)
+    ]], sendersJson, newInvoiceStatus, timestamp_seconds, invoiceId)
 
     dbAdmin:exec(updateQuery)
-    print("Updated sender status to Paid.")
+    print("Updated sender status and invoice status: " .. newInvoiceStatus)
 
     for _, receiver in ipairs(receivers) do
         Send({
