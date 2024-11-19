@@ -16,6 +16,7 @@ INVOICES = [[
     ReceiverName TEXT,
     ReceiverWallet TEXT,
     Senders TEXT,
+    Receivers TEXT,
     Timestamp INTEGER,
     PaidTimestamp INTEGER,
     InvoiceNote TEXT,
@@ -46,9 +47,13 @@ local function insertUser(pid, nickname)
 end
 
 local function insertInvoice(invoice)
+
+    print( "Insert Invoice" )
+
     local receiver_name = invoice.ReceiverName or "Unknown"
     local receiver_wallet = invoice.ReceiverWallet or "Unknown Wallet"
     local senders_json = json.encode(invoice.Senders or {})
+    local receivers_json = json.encode(invoice.Receivers or {})
     local invoice_note = invoice.InvoiceNote or ""
     local invoice_status = invoice.Status or "Pending"
     local invoice_type = invoice.InvoiceType or "Payment"
@@ -66,9 +71,19 @@ local function insertInvoice(invoice)
     end
 
     local query = string.format([[
-      INSERT INTO Invoices (ReceiverName, ReceiverWallet, Senders, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
-      VALUES ("%s", "%s", '%s', %d, "%s", %d, "%s", "%s", "%s");
-    ]], receiver_name, receiver_wallet, senders_json, timestamp, invoice_note, invoice_amount, invoice_status, invoice_type, category)
+      INSERT INTO Invoices (ReceiverName, ReceiverWallet, Senders, Receivers, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
+      VALUES ("%s", "%s", '%s', '%s', %d, "%s", %d, "%s", "%s", "%s");
+    ]], 
+    receiver_name, 
+    receiver_wallet, 
+    senders_json, 
+    receivers_json, 
+    timestamp, 
+    invoice_note, 
+    invoice_amount, 
+    invoice_status, 
+    invoice_type, 
+    category)
 
     dbAdmin:exec(query)
 
@@ -110,7 +125,7 @@ local function printAllInvoices()
 end
 
 local function printInvoiceById(invoiceId)
-    print("Searching for InvoiceID:" .. invoiceId)
+    print("Searching for InvoiceID: " .. invoiceId)
 
     local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
     local invoices = dbAdmin:exec(query)
@@ -122,25 +137,33 @@ local function printInvoiceById(invoiceId)
 
     for _, row in ipairs(invoices) do
         print("InvoiceID: " .. (row.InvoiceID or "N/A"))
-        print("RequestorName: " .. (row.RequestorName or "N/A"))
-        print("RequestorWallet: " .. (row.RequestorWallet or "N/A"))
+        print("ReceiverName: " .. (row.ReceiverName or "N/A"))
+        print("ReceiverWallet: " .. (row.ReceiverWallet or "N/A"))
         print("Timestamp: " .. (row.Timestamp or "N/A"))
         print("PaidTimestamp: " .. (row.PaidTimestamp or "N/A"))
         print("InvoiceNote: " .. (row.InvoiceNote or "N/A"))
         print("Amount: " .. (row.Amount or "N/A"))
         print("Status: " .. (row.Status or "N/A"))
         
-        local requestees = json.decode(row.Requestees or '[]')
-        print("Requestees:")
-        for _, requestee in ipairs(requestees) do
-            print("  - Address: " .. requestee.Address)
-            print("    Amount: " .. requestee.Amount)
-            print("    Status: " .. requestee.Status)
+        local senders = json.decode(row.Senders or '[]')
+        print("Senders:")
+        for _, sender in ipairs(senders) do
+            print("  - Address: " .. (sender.Address or "N/A"))
+            print("    Amount: " .. (sender.Amount or "N/A"))
+            print("    Status: " .. (sender.Status or "N/A"))
         end
+
+        local receivers = json.decode(row.Receivers or '[]')
+        print("Receivers:")
+        for _, receiver in ipairs(receivers) do
+            print("  - Address: " .. (receiver.Address or "N/A"))
+            print("    Amount: " .. (receiver.Amount or "N/A"))
+            print("    Status: " .. (receiver.Status or "N/A"))
+        end
+
         print("--------------------------------------------------")
     end
 end
-
 
 
 local function printAllUsers()
@@ -169,6 +192,125 @@ local function selectUserByPID(pid)
         end
     else
         print("No user found with PID: " .. pid)
+    end
+end
+
+function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
+
+    print("Creating prepaid invoice from PAID_INVOICE data")
+
+    local invoiceData = json.decode(paidInvoice)
+    if not invoiceData then
+        print("Failed to decode PAID_INVOICE.")
+        return
+    end
+
+    local senderName = invoiceData.SenderName or "Unknown"
+    local senderWallet = invoiceData.SenderWallet or sender
+    local receivers = invoiceData.Receivers or {}
+    local invoiceNote = invoiceData.InvoiceNote or ""
+    local invoiceType = invoiceData.InvoiceType or "PrePaid"
+    local category = invoiceData.Category or "Unknown"
+    local totalAmount = invoiceData.Total or quantity
+    local timestamp_ms = msg["Timestamp"]
+    local timestamp_seconds = math.floor(timestamp_ms / 1000)
+
+    local invoice = {
+        InvoiceType = invoiceType,
+        Category = category,
+        SenderName = senderName,
+        SenderWallet = senderWallet,
+        Receivers = receivers,
+        InvoiceNote = invoiceNote,
+        Amount = totalAmount,
+        Status = "Pending",
+        Timestamp = timestamp_seconds
+    }
+
+    insertInvoice(invoice)
+    print("Prepaid invoice created successfully.")
+end
+
+function PayInvoice(invoiceId, sender, quantity, msg)
+    print("Paying InvoiceID: " .. invoiceId)
+
+    local query = string.format([[
+        SELECT * FROM Invoices WHERE InvoiceID = "%s";
+    ]], invoiceId)
+
+    local invoice = dbAdmin:exec(query)
+
+    if #invoice == 0 then
+        print("Invoice not found: " .. invoiceId)
+        return
+    end
+
+    local invoiceAmount = invoice[1].Amount
+    local invoiceStatus = invoice[1].Status
+    local receiverWallet = invoice[1].ReceiverWallet
+    local sendersJson = invoice[1].Senders
+
+    local senders = json.decode(sendersJson or "[]")
+    if type(senders) ~= "table" then
+        print("Failed to decode senders or no senders available.")
+        return
+    end
+
+    local matchingSenderIndex = nil
+    for i, senderObj in ipairs(senders) do
+        if senderObj.Address == sender then
+            matchingSenderIndex = i
+            break
+        end
+    end
+
+    if not matchingSenderIndex then
+        print("Sender with sender address not found in the invoice.")
+        return
+    end
+
+    local matchingSender = senders[matchingSenderIndex]
+
+    if tonumber(matchingSender.Amount) == quantity then
+        print("Payment matches the sender's amount.")
+
+        matchingSender.Status = "Paid"
+        local timestamp_ms = msg["Timestamp"]
+        local timestamp_seconds = math.floor(timestamp_ms / 1000)
+        matchingSender.PaidTimestamp = timestamp_seconds
+
+        local allPaid = true
+        for _, senderObj in ipairs(senders) do
+            if senderObj.Status ~= "Paid" then
+                allPaid = false
+                break
+            end
+        end
+
+        local newInvoiceStatus = allPaid and "Paid" or "Pending"
+
+        sendersJson = json.encode(senders)
+        local updateQuery = string.format([[
+            UPDATE Invoices 
+            SET Senders = '%s', Status = "%s", PaidTimestamp = %d 
+            WHERE InvoiceID = "%s";
+        ]], sendersJson, newInvoiceStatus, timestamp_seconds, invoiceId)
+
+        dbAdmin:exec(updateQuery)
+        print("Updated sender status to Paid and saved to database.")
+
+        if newInvoiceStatus == "Paid" then
+            print("Invoice " .. invoiceId .. " is fully paid.")
+        end
+
+        Send({
+            Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8",
+            Action = "Transfer",
+            Quantity = tostring(quantity),
+            Recipient = receiverWallet
+        })
+    else
+        print("Payment does not match the sender's amount. Received: " .. quantity .. ", Expected: " .. matchingSender.Amount)
     end
 end
 
@@ -215,6 +357,7 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
     local invoice_note = data.Note
     local invoice_amount = data.Amount
     local senders = data.Senders
+    local receivers = data.Receivers
     local invoice_type = data.InvoiceType or "Payment"
     local category = data.Category or "Uncategorized"
 
@@ -230,6 +373,19 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
         print("Error: Senders is not a table. Actual type: " .. type(senders))
     end
 
+    if type(receivers) == "table" then
+        print("Receivers is a table with the following entries:")
+        for i, receiver in ipairs(receivers) do
+            print("Receiver " .. i .. ":")
+            print("  Name: " .. (receiver.Name or "N/A"))
+            print("  Address: " .. (receiver.Address or "N/A"))
+            print("  Amount: " .. (receiver.Amount or "N/A"))
+            print("  Status: " .. (receiver.Status or "N/A"))
+        end
+    else
+        print("Error: Receivers is not a table. Actual type: " .. type(receivers))
+    end
+
     local invoice = {
         ReceiverName = receiver_name,
         ReceiverWallet = receiver_wallet,
@@ -238,6 +394,7 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
         Amount = invoice_amount,
         Status = "Pending",
         Senders = senders,
+        Receivers = receivers,
         InvoiceType = invoice_type,
         Category = category
     }
@@ -354,136 +511,25 @@ Handlers.add(
     function (msg)
 
         local invoiceId = msg["X-[INVOICEID]"] or "" 
-        local paidInvoice = msg["X-[PAID_INVOICE]"] or "" -- A prepaid invoice sent with this payment
+        local paidInvoice = msg["X-[PAID_INVOICE]"] or ""
         local sender = msg.Sender or "Unknown Sender"
         local quantity = tonumber(msg.Quantity or 0)
 
         print("Credit-Notice: " .. quantity)
 
-        local decodedInvoice
-        if paidInvoice and paidInvoice ~= "" then
-            decodedInvoice = json.decode(paidInvoice)
-            if decodedInvoice then
-                print("Decoded PAID_INVOICE:")
-                print("InvoiceType: " .. (decodedInvoice.InvoiceType or "N/A"))
-                print("Category: " .. (decodedInvoice.Category or "N/A"))
-                print("SenderName: " .. (decodedInvoice.SenderName or "N/A"))
-                print("Total: " .. (decodedInvoice.Total or "N/A"))
-                print("Currency: " .. (decodedInvoice.Currency or "N/A"))
-
-                -- Iterate over receivers
-                if decodedInvoice.Receivers and type(decodedInvoice.Receivers) == "table" then
-                    for i, receiver in ipairs(decodedInvoice.Receivers) do
-                        print("Receiver " .. i .. ":")
-                        print("  Address: " .. (receiver.Address or "N/A"))
-                        print("  Amount: " .. (receiver.Amount or "N/A"))
-                        print("  Status: " .. (receiver.Status or "N/A"))
-                    end
-                end
-            else
-                print("Failed to decode PAID_INVOICE.")
-            end
+        if invoiceId ~= "" then
+            print("Processing payment for InvoiceID: " .. invoiceId)
+            PayInvoice(invoiceId, sender, quantity, msg)
+        elseif paidInvoice ~= "" then
+            print("Processing prepaid invoice")
+            CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
         else
-            print("No PAID_INVOICE data found.")
+            print("No valid X-[INVOICEID] or X-[PAID_INVOICE] tag found.")
         end
 
-        print("Decoded Invoice: " .. decodedInvoice.SenderName)
-
-        -- Here split what to do with the payment into different functions
-        
-
-        -- If ["X-[INVOICEID]"] then do basic invoicing
-        -- If ["X-[PAID_INVOICE]"] then create a new INVOICE with the payment
         -- If incorrect amount of id, then add to a LOOSE_PAYMENTS db
-
-        -- if msg.From ~= "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8" then
-        --     print("Invalid source for Credit-Notice")
-        --     return
-        -- end
-
-        -- print("Got qAR: " .. quantity .. " from " .. sender .. " for invoice " .. invoiceId)
-
-        -- local query = string.format([[
-        --     SELECT * FROM Invoices WHERE InvoiceID = "%s";
-        -- ]], invoiceId)
-
-        -- local invoice = dbAdmin:exec(query)
-
-        -- if #invoice == 0 then
-        --     print("Invoice not found: " .. invoiceId)
-        --     return
-        -- end
-
-        -- local invoiceAmount = invoice[1].Amount
-        -- local invoiceStatus = invoice[1].Status
-        -- local receiverWallet = invoice[1].ReceiverWallet
-        -- local sendersJson = invoice[1].Senders
-
-        -- local senders = json.decode(sendersJson or "[]")
-        -- if type(senders) ~= "table" then
-        --     print("Failed to decode senders or no senders available.")
-        --     return
-        -- end
-
-        -- local matchingSenderIndex = nil
-        -- for i, senderObj in ipairs(senders) do
-        --     if senderObj.Address == sender then
-        --         matchingSenderIndex = i
-        --         break
-        --     end
-        -- end
-
-        -- if not matchingSenderIndex then
-        --     print("Sender with sender address not found in the invoice.")
-        --     return
-        -- end
-
-        -- local matchingSender = senders[matchingSenderIndex]
-
-        -- if tonumber(matchingSender.Amount) == quantity then
-        --     print("Payment matches the sender's amount.")
-
-        --     matchingSender.Status = "Paid"
-        --     local timestamp_ms = msg["Timestamp"]
-        --     local timestamp_seconds = math.floor(timestamp_ms / 1000)
-        --     matchingSender.PaidTimestamp = timestamp_seconds
-
-        --     local allPaid = true
-        --     for _, senderObj in ipairs(senders) do
-        --         if senderObj.Status ~= "Paid" then
-        --             allPaid = false
-        --             break
-        --         end
-        --     end
-
-        --     local newInvoiceStatus = allPaid and "Paid" or "Pending"
-
-        --     sendersJson = json.encode(senders)
-        --     local updateQuery = string.format([[
-        --         UPDATE Invoices 
-        --         SET Senders = '%s', Status = "%s", PaidTimestamp = %d 
-        --         WHERE InvoiceID = "%s";
-        --     ]], sendersJson, newInvoiceStatus, timestamp_seconds, invoiceId)
-
-        --     dbAdmin:exec(updateQuery)
-        --     print("Updated sender status to Paid and saved to database.")
-
-        --     if newInvoiceStatus == "Paid" then
-        --         print("Invoice " .. invoiceId .. " is fully paid.")
-        --     end
-
-        --     Send({
-        --         Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8",
-        --         Action = "Transfer",
-        --         Quantity = tostring(quantity),
-        --         Recipient = receiverWallet
-        --     })
-        -- else
-        --     print("Payment does not match the sender's amount. Received: " .. quantity .. ", Expected: " .. matchingSender.Amount)
-        -- end
     end
 )
-
 
 
 Handlers.add(
