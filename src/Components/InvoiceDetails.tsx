@@ -20,7 +20,7 @@ function InvoiceDetails() {
 
   const { id } = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [parsedRequestees, setParsedRequestees] = useState<Sender[]>([]);
+  const [parsedSenders, setParsedSenders] = useState<Sender[]>([]);
   const [parsedReceivers, setParsedReceivers] = useState<Receiver[]>([]);
   const [requestee, setRequestee] = useState<Sender | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,13 +101,13 @@ function InvoiceDetails() {
     if (typeof invoice?.Senders === "string") {
       try {
         const requesteesArray: Sender[] = JSON.parse(invoice.Senders);
-        setParsedRequestees(requesteesArray);
+        setParsedSenders(requesteesArray);
       } catch (error) {
         console.error("Failed to parse Requestees JSON:", error);
-        setParsedRequestees([]);
+        setParsedSenders([]);
       }
     } else if (Array.isArray(invoice?.Senders)) {
-      setParsedRequestees([]);
+      setParsedSenders([]);
     }
   }, [invoice?.Senders]);
 
@@ -126,14 +126,14 @@ function InvoiceDetails() {
   }, [invoice?.Receivers]);
 
   useEffect(() => {
-    const foundRequestee = parsedRequestees.find((requestee) => requestee.Address === ADDRESS);
+    const foundRequestee = parsedSenders.find((requestee) => requestee.Address === ADDRESS);
 
     if (foundRequestee) {
       setRequestee(foundRequestee);
     } else {
       setRequestee(null);
     }
-  }, [parsedRequestees]);
+  }, [parsedSenders]);
 
   useEffect(() => {
     console.log("Requestee:", requestee);
@@ -175,7 +175,7 @@ function InvoiceDetails() {
   };
 
   const checkOwner = async () => {
-    return invoice?.ReceiverWallet === ADDRESS && invoice?.Status === 'Pending';
+    return invoice?.Owner === ADDRESS && invoice?.Status === 'Pending';
   };
 
   if (loading) {
@@ -302,16 +302,16 @@ function InvoiceDetails() {
               <span className="font-semibold">Payers</span>
             </div>
 
-            {parsedRequestees.length > 0 ? (
-              parsedRequestees.map((requestee, index) => (
+            {parsedSenders.length > 0 ? (
+              parsedSenders.map((requestee, index) => (
                 <motion.div 
                   key={index} 
-                  className={`flex flex-row justify-around mb-2 p-2 rounded-lg bg-slate-50 ${
+                  className={`flex flex-row justify-around mb-2 p-2 rounded-lg ${
                     requestee.Address === ADDRESS 
                       ? requestee.Status === "Paid" 
                         ? "bg-green-50" 
                         : "bg-orange-50"
-                      : ""
+                      : "bg-slate-50"
                   }`}
                   whileHover={{ scale: 1.02 }} 
                   transition={{ type: "tween", stiffness: 100 }}

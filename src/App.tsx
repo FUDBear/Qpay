@@ -26,9 +26,9 @@ function App() {
 				<WalletButton />
 			</div>
 
-			{/* <div className="absolute bottom-4 right-4">
+			<div className="absolute bottom-4 right-4">
 				<BalanceButton />
-			</div> */}
+			</div>
 
 		</HashRouter>
 	);

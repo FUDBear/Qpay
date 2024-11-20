@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPaidInvoice } from '../MiscTools';
-import { RecieverCardData, PaidInvoiceData } from '../Types';
+import { RecieverCardData, PaidInvoiceData, Sender } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import ReceiverCard from './ReceiverCard';
@@ -14,12 +14,20 @@ function SendPaidInvoiceCreation() {
 
   const [senderName, setSenderName] = useState("");
   const [senderAmount, setSenderAmount] = useState("0.000");
-  // const [senders, setSenders] = Sender[]([
-  //   {
+  const [senders, setSenders] = useState<Sender[]>([
+    {
+      Name: "",
+      Address: "",
+      Amount: "0.000",
+      Status: "Pending",
+    }
+  ]);
+  // const [receivers, setReceivers] = useState<Receiver[]>([
+  //   { 
   //     Name: "",
   //     Address: "",
   //     Amount: "0.000",
-  //     Status: "Pending",
+  //     Status: "Pending", 
   //   }
   // ]);
   const [receivers, setReceivers] = useState<RecieverCardData[]>([
@@ -101,21 +109,25 @@ function SendPaidInvoiceCreation() {
       // Here the values are flipped, the requestor is the sender and the requestees are the receivers
       if (ADDRESS !== 'disconnected' && window.arweaveWallet) {
 
-
         // Create a new Sender
-        const newSender = { Name: senderName,  Address: ADDRESS, Amount: senderAmount, Status: "Pending" };
+        const newSender = { 
+          Name: senderName,  
+          Address: ADDRESS, 
+          Amount: senderAmount, 
+          Status: "Pending" 
+        };
 
         for (let i = 0; i < receivers.length; i++) {
           const newReciever = { Address: receivers[i].Address, Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), Status: "Pending" };
         }
 
+        // const total = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
         let total = 0;
         for(let i = 0; i < receivers.length; i++) {
           total += parseFloat(receivers[i].Amount);
         }
         
         const newInvoice : PaidInvoiceData = {
-
           InvoiceType: "PrePaid",
           Category: "Unknown",
           SenderName: newSender.Name,
@@ -127,6 +139,14 @@ function SendPaidInvoiceCreation() {
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",
           })),
+          Senders: [
+            {
+              Name: newSender.Name,
+              Address: newSender.Address,
+              Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
+              Status: "Pending",
+            }
+          ],
           Total: (total * 1e12).toFixed(0),
           InvoiceNote: note,
           Currency: "qAR",

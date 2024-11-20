@@ -2,6 +2,7 @@ export type Invoice = {
     InvoiceID: string;
     InvoiceType: string;
     Category: string;
+    Owner: string;
     ReceiverName: string;
     ReceiverWallet: string;
     Senders: Sender[];
@@ -20,6 +21,7 @@ export type Invoice = {
     SenderName: string;
     SenderWallet: string;
     Receivers: Receiver[];
+    Senders: Sender[];
     Currency: string;
     Status: string;
     InvoiceNote: string;

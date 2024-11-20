@@ -19,7 +19,8 @@ INVOICES = [[
     PaidTimestamp INTEGER,
     InvoiceNote TEXT,
     Amount INTEGER,
-    Status TEXT
+    Status TEXT,
+    Owner TEXT
   );
 ]]
 
@@ -54,6 +55,7 @@ local function insertInvoice(invoice)
     local invoice_type = invoice.InvoiceType or "Payment"
     local category = invoice.Category or "Uncategorized"
     local timestamp = invoice.Timestamp or os.time()
+    local owner = invoice.Owner or "Unknown"
 
     print("Inserting invoice with receivers JSON")
 
@@ -66,9 +68,10 @@ local function insertInvoice(invoice)
     end
 
     local query = string.format([[
-      INSERT INTO Invoices (Senders, Receivers, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
-      VALUES ('%s', '%s', %d, "%s", %d, "%s", "%s", "%s");
+      INSERT INTO Invoices (Owner, Senders, Receivers, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
+      VALUES ("%s", '%s', '%s', %d, "%s", %d, "%s", "%s", "%s");
     ]], 
+    owner, 
     senders_json, 
     receivers_json, 
     timestamp, 
@@ -325,6 +328,8 @@ Handlers.add("CleanTables", "Clean-Tables", function (msg)
         return
     end
 
+    print("Cleaning Tables")
+
     local query = string.format("DROP TABLE IF EXISTS %s;", "Invoices")
     dbAdmin:exec(query)
 end)
@@ -344,8 +349,6 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
     print("CreateNewInvoice" .. msg.Data )
 
     local data = json.decode(msg.Data)
-    local receiver_name = data.ReceiverName
-    local receiver_wallet = msg.From
     local timestamp_ms = msg["Timestamp"]
     local timestamp_seconds = math.floor(timestamp_ms / 1000)
     local invoice_note = data.Note
@@ -354,6 +357,7 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
     local receivers = data.Receivers
     local invoice_type = data.InvoiceType or "Payment"
     local category = data.Category or "Uncategorized"
+    local owner = msg.From
 
     if type(senders) == "table" then
         print("Senders is a table with the following entries:")
@@ -381,8 +385,6 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
     end
 
     local invoice = {
-        ReceiverName = receiver_name,
-        ReceiverWallet = receiver_wallet,
         Timestamp = timestamp_seconds,
         InvoiceNote = invoice_note,
         Amount = invoice_amount,
@@ -390,7 +392,8 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
         Senders = senders,
         Receivers = receivers,
         InvoiceType = invoice_type,
-        Category = category
+        Category = category,
+        Owner = owner
     }
     
     insertInvoice(invoice)
@@ -406,7 +409,7 @@ Handlers.add("DeleteInvoice", "Delete-Invoice", function (msg)
 
     print("DeleteInvoice: " .. invoiceId)
 
-    local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s' AND ReceiverWallet = '%s';", invoiceId, senderWallet)
+    local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s' AND Owner = '%s';", invoiceId, senderWallet)
     local invoice = dbAdmin:exec(query)
 
     if #invoice == 0 then
@@ -417,8 +420,9 @@ Handlers.add("DeleteInvoice", "Delete-Invoice", function (msg)
     local deleteQuery = string.format("DELETE FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
     dbAdmin:exec(deleteQuery)
 
-    print("Invoice " .. invoiceId .. " has been deleted.")
+    print("Invoice " .. invoiceId .. " has been deleted by Owner: " .. senderWallet)
 end)
+
 
 Handlers.add("GetAddressInvoices", "Get-Address-Invoices", function (msg)
 
