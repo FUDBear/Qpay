@@ -20,6 +20,7 @@ function SendPaidInvoiceCreation() {
       Address: "",
       Amount: "0.000",
       Status: "Pending",
+      PaidTimestamp: "",
     }
   ]);
   // const [receivers, setReceivers] = useState<Receiver[]>([
@@ -130,6 +131,7 @@ function SendPaidInvoiceCreation() {
         const newInvoice : PaidInvoiceData = {
           InvoiceType: "PrePaid",
           Category: "Unknown",
+          OwnerName: newSender.Name,
           SenderName: newSender.Name,
           SenderWallet: newSender.Address,
           Status: newSender.Status,
@@ -145,6 +147,7 @@ function SendPaidInvoiceCreation() {
               Address: newSender.Address,
               Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
               Status: "Pending",
+              PaidTimestamp: "",
             }
           ],
           Total: (total * 1e12).toFixed(0),
@@ -169,13 +172,15 @@ function SendPaidInvoiceCreation() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+
       <Breadcrumbs />
+
+      {/* Spacer */}
+      <div className="h-16"></div>
 
       <div className="relative p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto">
         
       <h2 className="text-2xl font-semibold mb-4 text-[#2b3674]">Send Payment</h2>
-      <h3 className="text-xl font-medium mb-2 text-slate-300 opacity-75">*** None Working *** </h3>
-
 
         <div className="space-y-4">
           <div>

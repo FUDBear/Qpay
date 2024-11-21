@@ -103,6 +103,7 @@ function InvoiceCreation() {
         const totalAmount = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
 
         const newInvoice = {
+          OwnerName: receiverName,
           ReceiverName: receiverName,
           ReceiverWallet: ADDRESS,
           Senders: senders.map(req => ({
@@ -142,14 +143,16 @@ function InvoiceCreation() {
       updatedReceivers[0] = { ...updatedReceivers[0], Name: receiverName };
       return updatedReceivers;
     });
-    console.log("Receivers: ", receivers);
   } , [receiverName]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <Breadcrumbs />
 
-      <div className="relative p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto">
+      {/* Spacer */}
+      <div className="h-16"></div>
+
+      <div className="relative mt-18 p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto overflow-y-auto">
         
         <h2 className="text-2xl font-semibold mb-4 text-[#2b3674]">Create Invoice</h2>
 

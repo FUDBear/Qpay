@@ -61,7 +61,7 @@ function InvoiceCell({ invoice }: InvoiceCellProps) {
 
         
         <div className="flex flex-col">
-          <span className="font-semibold">{parsedReceivers[0]?.Name}</span>
+          <span className="font-semibold">{invoice?.OwnerName}</span>
           <span className="text-sm text-[#A3AED0]">{TruncateAddress(parsedReceivers[0]?.Address)}</span>
           <span className="text-sm text-[#A3AED0]">{isHighlighted}</span>
 

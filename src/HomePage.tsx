@@ -78,6 +78,9 @@ function HomePage() {
         </> : <>
         <Breadcrumbs/>
 
+        {/* Spacer */}
+        <div className="h-16"></div>
+
         {/* <div className="p-2 mx-auto">
             <div className="flex items-center">
             <img

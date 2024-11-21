@@ -219,6 +219,9 @@ function InvoiceDetails() {
 
       <Breadcrumbs />
 
+      {/* Spacer */}
+      <div className="h-16"></div>
+
       <div className="p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto">
 
       <div className="flex items-center justify-between mb-4">
@@ -284,15 +287,21 @@ function InvoiceDetails() {
 
           {/* Receiver */}
           <div className="flex flex-col mb-2">
+          
             <div className="flex flex-row items-center space-x-2">
               <img src={"./images/purple_icons/wallet.svg"} alt="date" className="w-4 h-4" />
-              <span className="font-semibold"> Reciever ({parsedReceivers[0]?.Name})</span>
+              <span className="font-semibold">
+                Receiver 
+                {parsedReceivers[0]?.Name ? ` (${parsedReceivers[0].Name})` : ""}
+              </span>
             </div>
+
 
             <motion.div className="flex flex-row items-center space-x-2" whileHover={{ scale: 1.02 }} transition={{ type: "tween", stiffness: 100 }} >
               <span className="text-sm text-[#A3AED0]">{parsedReceivers[0]?.Address}</span>
               <CopyButton textToCopy={parsedReceivers[0]?.Address} />
             </motion.div>
+
           </div>
 
           {/* Requestees */}
@@ -332,9 +341,10 @@ function InvoiceDetails() {
                       <div className="items-center">
                         <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-semibold">Paid</span>
                       </div>
-                      {/* <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50">
-                        {ConvertTimestampToDateTime(invoice.PaidTimestamp)}
-                      </span> */}
+                      <span className="absolute bottom-full right-0 mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50 whitespace-nowrap">
+                        Paid - {ConvertTimestampToDateTime(requestee.PaidTimestamp)}
+                      </span>
+
                     </div>
                   ) : (
                     <div className="items-start">
@@ -397,7 +407,7 @@ function InvoiceDetails() {
                   <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-semibold">Paid</span>
                 </div>
                 <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50">
-                  {ConvertTimestampToDateTime(invoice.PaidTimestamp)}
+                  Created - {ConvertTimestampToDateTime(invoice.Timestamp)}
                 </span>
               </div>
             ) : (

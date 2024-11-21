@@ -20,7 +20,8 @@ INVOICES = [[
     InvoiceNote TEXT,
     Amount INTEGER,
     Status TEXT,
-    Owner TEXT
+    Owner TEXT,
+    OwnerName TEXT
   );
 ]]
 
@@ -28,6 +29,46 @@ INVOICES = [[
 function InitDb() 
     db:exec(INVOICES)
     print("--InitDb--")
+
+    local alterQuery = [[
+        PRAGMA foreign_keys = OFF;
+        BEGIN TRANSACTION;
+
+        -- Create a temporary table with the unique constraint
+        CREATE TABLE IF NOT EXISTS Invoices_temp (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            InvoiceID TEXT UNIQUE,  -- Add UNIQUE constraint here
+            InvoiceType TEXT, 
+            Category TEXT,
+            Senders TEXT,
+            Receivers TEXT,
+            Timestamp INTEGER,
+            PaidTimestamp INTEGER,
+            InvoiceNote TEXT,
+            Amount INTEGER,
+            Status TEXT,
+            Owner TEXT,
+            OwnerName TEXT
+        );
+
+        -- Copy data from old table
+        INSERT OR IGNORE INTO Invoices_temp
+        SELECT * FROM Invoices;
+
+        -- Drop old table and rename the new table
+        DROP TABLE Invoices;
+        ALTER TABLE Invoices_temp RENAME TO Invoices;
+
+        COMMIT;
+        PRAGMA foreign_keys = ON;
+    ]]
+    
+    local result = db:exec(alterQuery)
+    if result ~= sqlite3.OK then
+        print("Error applying UNIQUE constraint to InvoiceID.")
+    else
+        print("UNIQUE constraint applied to InvoiceID successfully.")
+    end
 end
 
 local function sanitize(input)
@@ -55,7 +96,9 @@ local function insertInvoice(invoice)
     local invoice_type = invoice.InvoiceType or "Payment"
     local category = invoice.Category or "Uncategorized"
     local timestamp = invoice.Timestamp or os.time()
+    local paid_timestamp = invoice.PaidTimestamp or 0
     local owner = invoice.Owner or "Unknown"
+    local owner_name = invoice.OwnerName or "Unknown"
 
     print("Inserting invoice with receivers JSON")
 
@@ -68,10 +111,11 @@ local function insertInvoice(invoice)
     end
 
     local query = string.format([[
-      INSERT INTO Invoices (Owner, Senders, Receivers, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
-      VALUES ("%s", '%s', '%s', %d, "%s", %d, "%s", "%s", "%s");
+      INSERT INTO Invoices (Owner, OwnerName, Senders, Receivers, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
+      VALUES ("%s", "%s", '%s', '%s', %d, "%s", %d, "%s", "%s", "%s");
     ]], 
     owner, 
+    owner_name,
     senders_json, 
     receivers_json, 
     timestamp, 
@@ -161,39 +205,8 @@ local function printInvoiceById(invoiceId)
     end
 end
 
-
-local function printAllUsers()
-
-    print("All Users:")
-
-    local users = dbAdmin:exec("SELECT * FROM Users;")
-
-    if #users == 0 then
-        print("No users found.")
-        return
-    end
-
-    for _, row in ipairs(users) do
-        print("User: PID: " .. (row.PID or "N/A") .. ", Nickname: " .. (row.Nickname or "N/A"))
-    end
-end
-
-local function selectUserByPID(pid)
-    local select_sql = 'SELECT * FROM Users WHERE PID = ?;'
-    local results = dbAdmin:select(select_sql, { pid })
-
-    if #results > 0 then
-        for _, user in ipairs(results) do
-            print("PID: " .. user.PID .. ", Nickname: " .. user.Nickname)
-        end
-    else
-        print("No user found with PID: " .. pid)
-    end
-end
-
 function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
-
-    print("Creating prepaid invoice from PAID_INVOICE data")
+    print("------------ Creating PrePaid Invoice ------------")
 
     local invoiceData = json.decode(paidInvoice)
     if not invoiceData then
@@ -201,31 +214,92 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
         return
     end
 
-    local senderName = invoiceData.SenderName or "Unknown"
-    local senderWallet = invoiceData.SenderWallet or sender
-    local receivers = invoiceData.Receivers or {}
-    local invoiceNote = invoiceData.InvoiceNote or ""
-    local invoiceType = invoiceData.InvoiceType or "PrePaid"
-    local category = invoiceData.Category or "Unknown"
-    local totalAmount = invoiceData.Total or quantity
     local timestamp_ms = msg["Timestamp"]
     local timestamp_seconds = math.floor(timestamp_ms / 1000)
+    local paid_timestamp = timestamp_seconds
+    local invoice_note = invoiceData.InvoiceNote or "No Note"
+    local invoice_amount = tonumber(invoiceData.Total or quantity)
+    local senders = invoiceData.Senders or {}
+    local receivers = invoiceData.Receivers or {}
+    local invoice_type = invoiceData.InvoiceType or "PrePaid"
+    local category = invoiceData.Category or "Uncategorized"
+    local owner = sender
+    local owner_name = invoiceData.OwnerName or "Unknown"
+
+    if type(senders) == "table" then
+        print("Senders list:")
+        for i, senderObj in ipairs(senders) do
+            senderObj.Status = "Paid"
+            senderObj.Amount = invoice_amount
+            senderObj.PaidTimestamp = timestamp_seconds
+            print(string.format(
+                "Sender %d: Address: %s, Amount: %s, Status: %s, PaidTimestamp: %s",
+                i,
+                senderObj.Address or "N/A",
+                senderObj.Amount or "N/A",
+                senderObj.Status or "N/A",
+                senderObj.PaidTimestamp or "N/A"
+            ))
+        end
+    else
+        print("Error: Senders is not a table. Actual type: " .. type(senders))
+    end
+
+    if type(receivers) == "table" then
+        print("Receivers list:")
+        for i, receiverObj in ipairs(receivers) do
+            print(string.format("Receiver %d: Name: %s, Address: %s, Amount: %s, Status: %s", i, receiverObj.Name or "N/A", receiverObj.Address or "N/A", receiverObj.Amount or "N/A", receiverObj.Status or "N/A"))
+        end
+    else
+        print("Error: Receivers is not a table. Actual type: " .. type(receivers))
+    end
 
     local invoice = {
-        InvoiceType = invoiceType,
-        Category = category,
-        SenderName = senderName,
-        SenderWallet = senderWallet,
+        Timestamp = timestamp_seconds,
+        InvoiceNote = invoice_note,
+        Amount = invoice_amount,
+        Status = "Paid",
+        Senders = senders,
         Receivers = receivers,
-        InvoiceNote = invoiceNote,
-        Amount = totalAmount,
-        Status = "Pending",
-        Timestamp = timestamp_seconds
+        InvoiceType = invoice_type,
+        Category = category,
+        Owner = owner,
+        OwnerName = owner_name,
+        PaidTimestamp = timestamp_seconds
     }
 
     insertInvoice(invoice)
     print("Prepaid invoice created successfully.")
+
+    ProcessFunds(receivers, invoice_amount)
+
+    local invoice_json = json.encode(invoice)
+    Send({ Target = msg.From, Data = invoice_json })
 end
+
+function ProcessFunds(receivers, quantity)
+    if type(receivers) ~= "table" or #receivers == 0 then
+        print("No receivers to process funds for.")
+        return
+    end
+
+    for _, receiver in ipairs(receivers) do
+        if receiver.Address and tonumber(receiver.Amount) then
+            Send({
+                Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8",
+                Action = "Transfer",
+                Quantity = tostring(receiver.Amount),
+                Recipient = receiver.Address
+            })
+            print(string.format("Funds sent: %s tokens to %s", receiver.Amount, receiver.Address))
+        else
+            print("Invalid receiver data: Address or Amount is missing.")
+        end
+    end
+
+    print("Funds processing complete.")
+end
+
 
 function PayInvoice(invoiceId, sender, quantity, msg)
     print("Paying InvoiceID: " .. invoiceId)
@@ -276,6 +350,7 @@ function PayInvoice(invoiceId, sender, quantity, msg)
     matchingSender.Status = "Paid"
     local timestamp_ms = msg["Timestamp"]
     local timestamp_seconds = math.floor(timestamp_ms / 1000)
+    matchingSender.PaidTimestamp = timestamp_seconds
 
     local allSendersPaid = true
     for _, senderObj in ipairs(senders) do
@@ -310,41 +385,6 @@ function PayInvoice(invoiceId, sender, quantity, msg)
     print("Invoice payment process complete.")
 end
 
-
-Handlers.add("Init", "Init", function (msg)  
-    
-    -- admin only
-    if msg.From ~= ao.id then
-        return
-    end
-
-    InitDb()
-end)
-
-Handlers.add("CleanTables", "Clean-Tables", function (msg)  
-    
-    -- admin only
-    if msg.From ~= ao.id then
-        return
-    end
-
-    print("Cleaning Tables")
-
-    local query = string.format("DROP TABLE IF EXISTS %s;", "Invoices")
-    dbAdmin:exec(query)
-end)
-
-Handlers.add("AddTable", "AddTable", function (msg)    
-    print( "AddTable Hit!" ) 
-
-    if dbAdmin then
-        print("dbAdmin is not nil")
-    else
-        print("dbAdmin is nil")
-    end
-
-end)
-
 Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
     print("CreateNewInvoice" .. msg.Data )
 
@@ -358,6 +398,7 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
     local invoice_type = data.InvoiceType or "Payment"
     local category = data.Category or "Uncategorized"
     local owner = msg.From
+    local owner_name = data.OwnerName or "Unknown"
 
     if type(senders) == "table" then
         print("Senders is a table with the following entries:")
@@ -393,7 +434,8 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
         Receivers = receivers,
         InvoiceType = invoice_type,
         Category = category,
-        Owner = owner
+        Owner = owner,
+        OwnerName = owner_name
     }
     
     insertInvoice(invoice)
@@ -465,7 +507,7 @@ Handlers.add("GetAddressInvoices", "Get-Address-Invoices", function (msg)
     end
 
     local invoices_json = json.encode(matching_invoices)
-    print("Matching Invoices: " .. invoices_json)
+    -- print("Matching Invoices: " .. invoices_json)
     Send({ Target = msg.From, Data = invoices_json })
 end)
 
@@ -538,4 +580,82 @@ Handlers.add(
     end
 )
 
+------ || Crons || ------
+
+Handlers.add( "CronTick", Handlers.utils.hasMatchingTag("Action", "Cron"),
+  function ()
+    print("Cron tick")
+  end
+)
+
+------ || Admin Handlers || ------
+
+Handlers.add("Init", "Init", function (msg)  
+    
+    -- admin only
+    if msg.From ~= ao.id then
+        return
+    end
+
+    InitDb()
+end)
+
+Handlers.add("CleanTables", "Clean-Tables", function (msg)  
+    
+    -- admin only
+    if msg.From ~= ao.id then
+        return
+    end
+
+    print("Cleaning Tables")
+
+    local query = string.format("DROP TABLE IF EXISTS %s;", "Invoices")
+    dbAdmin:exec(query)
+end)
+
+-- This shoul dbe removed asap
+-- Handlers.add("AddTable", "AddTable", function (msg)    
+--     print( "AddTable Hit!" ) 
+
+--     if dbAdmin then
+--         print("dbAdmin is not nil")
+--     else
+--         print("dbAdmin is nil")
+--     end
+
+-- end)
+
+Handlers.add("AdminDeleteInvoice", "Admin-Delete-Invoice", function(msg)
+
+    -- admin only
+    if msg.From ~= ao.id then
+        print("Access Denied: Not an admin.")
+        return
+    end
+
+    print("AdminDeleteInvoice triggered.")
+
+    local invoiceId = msg.ID
+
+    if not invoiceId then
+        print("No InvoiceID provided.")
+        Send({ Target = msg.From, Action = "Admin-Delete-Invoice", Error = "InvoiceID is required." })
+        return
+    end
+
+    local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
+    local invoice = dbAdmin:exec(query)
+
+    if #invoice == 0 then
+        print("Invoice not found: " .. invoiceId)
+        Send({ Target = msg.From, Action = "Admin-Delete-Invoice", Error = "No invoice found with the provided InvoiceID." })
+        return
+    end
+
+    local deleteQuery = string.format("DELETE FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
+    dbAdmin:exec(deleteQuery)
+
+    print("Invoice " .. invoiceId .. " has been deleted by admin.")
+    Send({ Target = msg.From, Action = "Admin-Delete-Invoice", Success = true, Message = "Invoice deleted successfully." })
+end)
 

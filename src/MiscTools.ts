@@ -47,6 +47,9 @@ export const FormatBalanceDecimal = (balance: number): string => {
 
 
 export const ConvertTimestampToDateTime = (timestamp: string) => {
+    if (!timestamp || timestamp === "" || timestamp === undefined ) {
+        return "No timestamp provided.";
+    }
     const date = new Date(parseInt(timestamp, 10) * 1000);
     const formattedDate = date.toLocaleDateString('en-US');
     const formattedTime = date.toLocaleTimeString('en-US');
