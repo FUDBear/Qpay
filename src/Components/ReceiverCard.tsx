@@ -1,8 +1,27 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { RecieverCardData } from "../Types";
 import Swal from 'sweetalert2';
+import DatePickerToTimestamp from './DatePickerToTimestamp';
 
 const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateReciever: UpdateRequestee, RemoveReciever: RemoveRequestee, Index}) => {
+  
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const toggleDatePicker = () => {
+    setShowDatePicker((prev) => {
+      if (prev) {
+        UpdateRequestee("ScheduledTimestamp", "");
+      }
+      return !prev;
+    });
+  };
+
+  const handleTimestampSelect = (timestamp: number | null) => {
+    UpdateRequestee("ScheduledTimestamp", timestamp ? timestamp.toString() : "");
+    setShowDatePicker(false);
+  };
+  
+  
   const showDeleteConfirm = () => {
 
     Swal.fire({
@@ -33,7 +52,21 @@ const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateRecie
       )}
 
       <div className="mb-4">
-        <label className="block text-gray-700 font-bold mb-2">Send Q-AR To</label>
+        <div className="flex justify-between items-center">
+          <label className="text-gray-700 font-bold">Send Q-AR To</label>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleDatePicker}
+              className="flex items-center rounded-xl text-white font-semibold py-2 px-2 hover:bg-gray-200 transition duration-300 ease-in-out"
+            >
+              <img
+                src={"./images/purple_icons/schedule_send.svg"}
+                alt="New Invoice"
+                className="w-6 h-6"
+              />
+            </button>
+          </div>
+        </div>
         <input
           type="text"
           value={Address}
@@ -42,7 +75,9 @@ const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateRecie
           placeholder="Enter Receiver Address"
           required
         />
+        
       </div>
+
 
       <div>
         <label className="block text-gray-700 font-bold mb-2">Amount</label>
@@ -59,8 +94,15 @@ const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateRecie
             placeholder="Enter Amount To Pay"
             required
         />
-    </div>
+      </div>
 
+      {showDatePicker && (
+        <div className="mt-4">
+          <DatePickerToTimestamp
+            onDateChange={(timestamp) => UpdateRequestee("ScheduledTimestamp", timestamp)}
+          />
+        </div>
+      )}
 
     </div>
   );

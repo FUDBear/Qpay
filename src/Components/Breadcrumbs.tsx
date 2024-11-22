@@ -10,6 +10,7 @@ function Breadcrumbs() {
     invoices: 'Invoices',
     send: 'Send',
     request: 'Request',
+    scheduled_payment: 'Scheduled Payment',
   };
 
   return (

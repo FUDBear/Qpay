@@ -1,33 +1,36 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
-import { SendPayMessage, FormatBalance } from '../MiscTools';
-import { RecieverCardData, Receiver } from '../Types';
+import { SendPaidInvoice } from '../MiscTools';
+import { RecieverCardData, PaidInvoiceData, Sender } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
-import RequesteeCard from './RequesteeCard';
+import ReceiverCard from './ReceiverCard';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
+import DatePickerToTimestamp from "./DatePickerToTimestamp";
 
-function InvoiceCreation() {
+function ScheduledPaidInvoiceCreation() {
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 
-  const [receiverName, setReceiverName] = useState("");
-  const [senders, setSenders] = useState<RecieverCardData[]>([
+  const [senderName, setSenderName] = useState("");
+  const [senderAmount, setSenderAmount] = useState("0.000");
+  const [senders, setSenders] = useState<Sender[]>([
+    {
+        Name: "",
+        Address: "",
+        Amount: "0.000",
+        Status: "Pending",
+        PaidTimestamp: "",
+    }
+  ]);
+  const [receivers, setReceivers] = useState<RecieverCardData[]>([
     {
       Address: "",
       Amount: "0.000",
       Index: 0,
       UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
       RemoveReciever: () => handleRemoveRequestee(0),
-    }
-  ]);
-  const [receivers, setReceivers] = useState<Receiver[]>([
-    { 
-      Name: "",
-      Address: "",
-      Amount: "0.000",
-      Status: "Pending",
       ScheduledTimestamp: "",
     }
   ]);
@@ -69,14 +72,14 @@ function InvoiceCreation() {
   };
 
   const handleUpdateRequestee = (index: number, key: keyof RecieverCardData, value: string) => {
-    setSenders(prev =>
+    setReceivers(prev =>
       prev.map((req, i) => (i === index ? { ...req, [key]: value } : req))
     );
   };
 
   const handleRemoveRequestee = (index: number) => {
-    if (senders.length > 1) {
-      setSenders(senders.filter((_, i) => i !== index));
+    if (receivers.length > 1) {
+      setReceivers(receivers.filter((_, i) => i !== index));
     }
   };
 
@@ -84,49 +87,73 @@ function InvoiceCreation() {
     const newRequestee: RecieverCardData = {
       Address: "",
       Amount: "0.000",
-      Index: senders.length,
-      UpdateReciever: (key, value) => handleUpdateRequestee(senders.length, key, value),
-      RemoveReciever: () => handleRemoveRequestee(senders.length),
+      Index: receivers.length,
+      UpdateReciever: (key, value) => handleUpdateRequestee(receivers.length, key, value),
+      RemoveReciever: () => handleRemoveRequestee(receivers.length),
     };
-    setSenders([...senders, newRequestee]);
+    setReceivers([...receivers, newRequestee]);
   };
 
   const handleCreateInvoice = async () => {
-    if (!receiverName || senders.some(req => !req.Address || !req.Amount) || !note) {
+    if (!senderName || receivers.some(req => !req.Address || !req.Amount) || !note) {
       showFail();
       return;
     }
 
     try {
+      // Here the values are flipped, the requestor is the sender and the requestees are the receivers
       if (ADDRESS !== 'disconnected' && window.arweaveWallet) {
 
-        // A fixed invoice w/ only 1 receiver
-        const totalAmount = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
+        // Create a new Sender
+        const newSender = { 
+          Name: senderName,  
+          Address: ADDRESS, 
+          Amount: senderAmount, 
+          Status: "Pending" 
+        };
 
-        const newInvoice = {
-          OwnerName: receiverName,
-          ReceiverName: receiverName,
-          ReceiverWallet: ADDRESS,
-          Senders: senders.map(req => ({
+        for (let i = 0; i < receivers.length; i++) {
+          const newReciever = { Address: receivers[i].Address, Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), Status: "Pending" };
+        }
+
+        // const total = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
+        let total = 0;
+        for(let i = 0; i < receivers.length; i++) {
+          total += parseFloat(receivers[i].Amount);
+        }
+        
+        const newInvoice : PaidInvoiceData = {
+          InvoiceType: "PrePaidScheduled",
+          Category: "Unknown",
+          OwnerName: newSender.Name,
+          SenderName: newSender.Name,
+          SenderWallet: newSender.Address,
+          Status: newSender.Status,
+          Receivers: receivers.map(req => ({
+            Name: "",
             Address: req.Address,
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",
+            ScheduledTimestamp: "",
           })),
-          Receivers: [
+          Senders: [
             {
-              Name: receiverName,
-              Address: ADDRESS,
-              Amount: (totalAmount * 1e12).toFixed(0),
-              Status: "Pending",
+                Name: newSender.Name,
+                Address: newSender.Address,
+                Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
+                Status: "Pending",
+                PaidTimestamp: "",
             }
           ],
-          Note: note,
+          Total: (total * 1e12).toFixed(0),
+          InvoiceNote: note,
           Currency: "qAR",
         };
 
-        console.log("New Invoice: ", newInvoice);
+        console.log("New PAID_INVOICE: ", JSON.stringify(newInvoice));
 
-        const result = await SendPayMessage("Create-New-Invoice", JSON.stringify(newInvoice));
+        const result = await SendPaidInvoice( newInvoice.SenderWallet, newInvoice.Total,
+           JSON.stringify(newInvoice));
         console.log("Result: ", result);
         showSuccess();
       } else {
@@ -138,40 +165,37 @@ function InvoiceCreation() {
     }
   };
 
-  useEffect(() => {
-    setReceivers((prevReceivers) => {
-      const updatedReceivers = [...prevReceivers];
-      updatedReceivers[0] = { ...updatedReceivers[0], Name: receiverName };
-      return updatedReceivers;
-    });
-  } , [receiverName]);
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+
       <Breadcrumbs />
 
       {/* Spacer */}
       <div className="h-16"></div>
 
-      <div className="relative mt-18 p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto overflow-y-auto">
+      <div className="relative p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto">
         
-        <h2 className="text-2xl font-semibold mb-4 text-[#2b3674]">Create Invoice</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-[#2b3674]">Schedule Payment</h2>
 
         <div className="space-y-4">
           <div>
             <label className="block text-gray-700 font-bold mb-2">Your Name</label>
             <input
               type="text"
-              value={receiverName}
-              onChange={(e) => setReceiverName(e.target.value)}
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
               className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
-              placeholder="Enter requestor name"
+              placeholder="Enter Your Name"
               required
             />
           </div>
 
+          <div className="flex justify-center items-center bg-gray-50">
+            {/* <DatePickerToTimestamp /> */}
+            </div>
+
           <AnimatePresence>
-            {senders.map((requestee, index) => (
+            {receivers.map((r, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.1 }}
@@ -180,9 +204,9 @@ function InvoiceCreation() {
                 transition={{ duration: 0.1 }}
                 className="flex items-center"
               >
-                <RequesteeCard
-                  Address={requestee.Address}
-                  Amount={requestee.Amount}
+                <ReceiverCard
+                  Address={r.Address}
+                  Amount={r.Amount}
                   Index={index}
                   UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
                   RemoveReciever={() => handleRemoveRequestee(index)}
@@ -191,11 +215,11 @@ function InvoiceCreation() {
             ))}
           </AnimatePresence>
 
-          <div className="flex items-center justify-around">
+          {/* <div className="flex items-center justify-around">
             <button onClick={handleAddRequestee} className="flex text-white rounded-full font-semibold hover:bg-slate-200 transition duration-300 ease-in-out">
-              <img src={'./images/purple_icons/add_circle.svg'} alt="Add Invoice Requestee" className="w-8 h-8" />
+              <img src={'./images/purple_icons/add_circle.svg'} alt="Add Invoice Reciever" className="w-8 h-8" />
             </button>
-          </div>
+          </div> */}
 
           <div>
             <label className="block text-gray-700 font-bold mb-2">Note</label>
@@ -211,7 +235,7 @@ function InvoiceCreation() {
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.6 }} onClick={handleCreateInvoice}
             className="bg-[#4318FF] text-white font-semibold py-3 px-6 rounded-xl hover:bg-[#503BC4] transition ease-in-out duration-200 shadow-lg mt-4 w-full"
           >
-            Create Invoice
+            Send Payment
           </motion.button>
         </div>
       </div>
@@ -219,4 +243,4 @@ function InvoiceCreation() {
   );
 }
 
-export default InvoiceCreation;
+export default ScheduledPaidInvoiceCreation;

@@ -43,6 +43,7 @@ export type Invoice = {
     Address: string;
     Amount: string;
     Status: string;
+    ScheduledTimestamp: string;
   };
   
   export type TokenInfo = {
@@ -71,6 +72,7 @@ export type RecieverCardData = {
   Index: number;
   UpdateReciever: (key: keyof RecieverCardData, value: string) => void;
   RemoveReciever: () => void;
+  ScheduledTimestamp?: string;
 };
 
   

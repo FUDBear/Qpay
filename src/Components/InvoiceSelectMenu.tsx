@@ -15,6 +15,10 @@ function InvoiceSelectMenu() {
         navigate("/invoicecreation/request");
     }
 
+    const handleSchedule = () => {
+        navigate("/invoicecreation/scheduled_payment");
+    }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <Breadcrumbs />
@@ -62,6 +66,7 @@ function InvoiceSelectMenu() {
             </button>
 
             <button
+                onClick={handleSchedule}
                 className="bg-slate-100 min-w-full min-h-40 text-white font-semibold py-2 px-4 rounded hover:bg-slate-200 transition duration-300 ease-in-out" >
                 <div className="flex flex-col items-center justify-around mb-4">
 

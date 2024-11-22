@@ -23,14 +23,6 @@ function SendPaidInvoiceCreation() {
       PaidTimestamp: "",
     }
   ]);
-  // const [receivers, setReceivers] = useState<Receiver[]>([
-  //   { 
-  //     Name: "",
-  //     Address: "",
-  //     Amount: "0.000",
-  //     Status: "Pending", 
-  //   }
-  // ]);
   const [receivers, setReceivers] = useState<RecieverCardData[]>([
     {
       Address: "",
@@ -38,6 +30,7 @@ function SendPaidInvoiceCreation() {
       Index: 0,
       UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
       RemoveReciever: () => handleRemoveRequestee(0),
+      ScheduledTimestamp: "",
     }
   ]);
   const [note, setNote] = useState("");
@@ -118,9 +111,12 @@ function SendPaidInvoiceCreation() {
           Status: "Pending" 
         };
 
-        for (let i = 0; i < receivers.length; i++) {
-          const newReciever = { Address: receivers[i].Address, Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), Status: "Pending" };
-        }
+        // for (let i = 0; i < receivers.length; i++) {
+        //   const newReciever = { 
+        //     Address: receivers[i].Address, 
+        //     Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), 
+        //     Status: "Pending" };
+        // }
 
         // const total = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
         let total = 0;
@@ -129,7 +125,9 @@ function SendPaidInvoiceCreation() {
         }
         
         const newInvoice : PaidInvoiceData = {
-          InvoiceType: "PrePaid",
+          InvoiceType: receivers.some(req => req.ScheduledTimestamp && req.ScheduledTimestamp !== "") 
+                ? "PrePaidScheduled" 
+                : "PrePaid",
           Category: "Unknown",
           OwnerName: newSender.Name,
           SenderName: newSender.Name,
@@ -140,6 +138,7 @@ function SendPaidInvoiceCreation() {
             Address: req.Address,
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",
+            ScheduledTimestamp: req.ScheduledTimestamp? req.ScheduledTimestamp : "",
           })),
           Senders: [
             {
@@ -147,7 +146,7 @@ function SendPaidInvoiceCreation() {
               Address: newSender.Address,
               Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
               Status: "Pending",
-              PaidTimestamp: "",
+              PaidTimestamp: ""
             }
           ],
           Total: (total * 1e12).toFixed(0),

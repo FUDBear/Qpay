@@ -1,0 +1,22 @@
+.custom-datepicker-calendar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .react-datepicker__time-container {
+    width: auto !important;
+  }
+  
+  .react-datepicker__time-container .react-datepicker__time {
+    border-left: none;
+  }
+  
+  .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
+    width: 100%;
+  }
+  
+  /* .custom-datepicker-calendar {
+    width: 400px;
+  } */
+  

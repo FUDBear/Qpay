@@ -9,6 +9,7 @@ import InvoiceSelectMenu from "./Components/InvoiceSelectMenu";
 import WalletButton from "./Components/WalletButton";
 import BalanceButton from "./Components/BalanceButton";
 import SendPaidInvoiceCreation from "./Components/SendPaidInvoiceCreation";
+import ScheduledPaidInvoiceCreation from "./Components/ScheduledPaidInvoiceCreation";
 
 function App() {
 	return (
@@ -20,6 +21,7 @@ function App() {
 				<Route path="/invoicecreation/" element={<InvoiceSelectMenu />} />
 				<Route path="/invoicecreation/send" element={<SendPaidInvoiceCreation />} />
 				<Route path="/invoicecreation/request" element={<InvoiceCreation />} />
+				<Route path="/invoicecreation/scheduled_payment" element={<ScheduledPaidInvoiceCreation />} />
 			</Routes>
 
 			<div className="absolute top-4 right-4">

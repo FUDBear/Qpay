@@ -137,6 +137,15 @@ local function insertInvoice(invoice)
     dbAdmin:exec(update_query)
 
     print("Invoice inserted with ID: " .. invoice_id)
+
+    if invoice_type == "PrePaid" then
+        ProcessFunds(invoice, invoice_id)
+    elseif invoice_type == "PrePaidScheduled" then
+        print(string.format("Invoice %s is a PrePaidScheduled type and will be processed later based on the schedule.", invoice_id))
+    else
+        print(string.format("Invoice %s has an unrecognized type: %s.", invoice_id, invoice_type))
+    end
+    
 end
 
 
@@ -199,6 +208,7 @@ local function printInvoiceById(invoiceId)
             print("  - Address: " .. (receiver.Address or "N/A"))
             print("    Amount: " .. (receiver.Amount or "N/A"))
             print("    Status: " .. (receiver.Status or "N/A"))
+            print("    ScheduledTimestamp: " .. (receiver.ScheduledTimestamp or "N/A"))
         end
 
         print("--------------------------------------------------")
@@ -229,7 +239,7 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
     if type(senders) == "table" then
         print("Senders list:")
         for i, senderObj in ipairs(senders) do
-            senderObj.Status = "Paid"
+            senderObj.Status = "Pending"
             senderObj.Amount = invoice_amount
             senderObj.PaidTimestamp = timestamp_seconds
             print(string.format(
@@ -248,7 +258,16 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
     if type(receivers) == "table" then
         print("Receivers list:")
         for i, receiverObj in ipairs(receivers) do
-            print(string.format("Receiver %d: Name: %s, Address: %s, Amount: %s, Status: %s", i, receiverObj.Name or "N/A", receiverObj.Address or "N/A", receiverObj.Amount or "N/A", receiverObj.Status or "N/A"))
+            
+            print(string.format(
+                "Receiver %d: Name: %s, Address: %s, Amount: %s, Status: %s, ScheduledTimestamp: %s",
+                i,
+                receiverObj.Name or "N/A",
+                receiverObj.Address or "N/A",
+                receiverObj.Amount or "N/A",
+                receiverObj.Status or "N/A",
+                receiverObj.ScheduledTimestamp or "N/A"
+            ))
         end
     else
         print("Error: Receivers is not a table. Actual type: " .. type(receivers))
@@ -258,7 +277,7 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
         Timestamp = timestamp_seconds,
         InvoiceNote = invoice_note,
         Amount = invoice_amount,
-        Status = "Paid",
+        Status = "Pending",
         Senders = senders,
         Receivers = receivers,
         InvoiceType = invoice_type,
@@ -269,36 +288,93 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
     }
 
     insertInvoice(invoice)
-    print("Prepaid invoice created successfully.")
-
-    ProcessFunds(receivers, invoice_amount)
 
     local invoice_json = json.encode(invoice)
     Send({ Target = msg.From, Data = invoice_json })
 end
 
-function ProcessFunds(receivers, quantity)
+
+function ProcessFunds(invoice, invoice_id)
+    local receivers = invoice.Receivers or {}
+    local senders = invoice.Senders or {}
+    local timestamp = invoice.Timestamp or "N/A"
+
     if type(receivers) ~= "table" or #receivers == 0 then
         print("No receivers to process funds for.")
         return
     end
 
+    -- Process Receivers
     for _, receiver in ipairs(receivers) do
-        if receiver.Address and tonumber(receiver.Amount) then
-            Send({
-                Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8",
-                Action = "Transfer",
-                Quantity = tostring(receiver.Amount),
-                Recipient = receiver.Address
-            })
-            print(string.format("Funds sent: %s tokens to %s", receiver.Amount, receiver.Address))
+        if not receiver.ScheduledTimestamp or receiver.ScheduledTimestamp == "" then
+            if receiver.Address and tonumber(receiver.Amount) then
+                Send({
+                    Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8",
+                    Action = "Transfer",
+                    Quantity = tostring(receiver.Amount),
+                    Recipient = receiver.Address
+                })
+                print(string.format("Funds sent: %s tokens to %s", receiver.Amount, receiver.Address))
+            else
+                print("Invalid receiver data: Address or Amount is missing.")
+            end
         else
-            print("Invalid receiver data: Address or Amount is missing.")
+            print(string.format("Skipping receiver with ScheduledTimestamp: %s", receiver.ScheduledTimestamp))
         end
+    end
+
+    -- Update Senders
+    if type(senders) == "table" then
+        print("Updating Senders list:")
+        for i, senderObj in ipairs(senders) do
+            senderObj.Status = "Paid"
+            senderObj.PaidTimestamp = timestamp
+            print(string.format(
+                "Sender %d updated: Address: %s, Amount: %s, Status: %s, PaidTimestamp: %s",
+                i,
+                senderObj.Address or "N/A",
+                senderObj.Amount or "N/A",
+                senderObj.Status or "N/A",
+                senderObj.PaidTimestamp or "N/A"
+            ))
+        end
+
+        -- Encode updated senders back to JSON
+        local senders_json = json.encode(senders)
+
+        -- Update senders in the database
+        local updateSendersQuery = string.format(
+            "UPDATE Invoices SET Senders = '%s' WHERE InvoiceID = '%s';",
+            senders_json:gsub("'", "''"), -- Escape single quotes for SQL
+            invoice_id
+        )
+
+        local success = dbAdmin:exec(updateSendersQuery)
+        if success then
+            print("Senders updated successfully in the database.")
+        else
+            print("Failed to update senders in the database.")
+        end
+    else
+        print("Error: Senders is not a table. Actual type: " .. type(senders))
+    end
+
+    -- Update the Invoice Status in the Database
+    local updateQuery = string.format(
+        "UPDATE Invoices SET Status = 'Paid', PaidTimestamp = %d WHERE InvoiceID = '%s';",
+        timestamp,
+        invoice_id
+    )
+    local success = dbAdmin:exec(updateQuery)
+    if success then
+        print(string.format("Invoice %s updated to Paid.", invoice_id))
+    else
+        print(string.format("Failed to update Invoice %s to Paid.", invoice_id))
     end
 
     print("Funds processing complete.")
 end
+
 
 
 function PayInvoice(invoiceId, sender, quantity, msg)
@@ -583,10 +659,57 @@ Handlers.add(
 ------ || Crons || ------
 
 Handlers.add( "CronTick", Handlers.utils.hasMatchingTag("Action", "Cron"),
-  function ()
-    print("Cron tick")
+  function (msg)
+
+    local timestamp_ms = msg["Timestamp"]
+    local timestamp_seconds = math.floor(timestamp_ms / 1000)
+
+    print("Cron Timestamp: " .. timestamp_seconds)
+
+    ProcessScheduled()
   end
 )
+
+function ProcessScheduled()
+    print("ProcessScheduled started")
+
+    local query = [[
+        SELECT * FROM Invoices 
+        WHERE InvoiceType = "PrePaidScheduled" AND Status = "Pending";
+    ]]
+    local results = dbAdmin:exec(query)
+
+    if #results == 0 then
+        print("No Pending PrePaidScheduled invoices found.")
+        return
+    end
+
+    print("Found Pending PrePaidScheduled invoices:")
+    for _, invoiceRow in ipairs(results) do
+        print(string.format("Processing InvoiceID: %s, Status: %s", 
+            invoiceRow.InvoiceID or "N/A", 
+            invoiceRow.Status or "N/A"
+        ))
+
+        local invoice = {
+            InvoiceID = invoiceRow.InvoiceID,
+            Timestamp = invoiceRow.Timestamp,
+            InvoiceNote = invoiceRow.InvoiceNote,
+            Amount = invoiceRow.Amount,
+            Status = invoiceRow.Status,
+            Senders = json.decode(invoiceRow.Senders or "[]"),
+            Receivers = json.decode(invoiceRow.Receivers or "[]"),
+            InvoiceType = invoiceRow.InvoiceType,
+            Category = invoiceRow.Category,
+            Owner = invoiceRow.Owner,
+            OwnerName = invoiceRow.OwnerName,
+        }
+
+        ProcessFunds(invoice, invoiceRow.InvoiceID)
+    end
+
+    print("ProcessScheduled completed")
+end
 
 ------ || Admin Handlers || ------
 
