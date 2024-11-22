@@ -139,7 +139,7 @@ local function insertInvoice(invoice)
     print("Invoice inserted with ID: " .. invoice_id)
 
     if invoice_type == "PrePaid" then
-        ProcessFunds(invoice, invoice_id)
+        ProcessFunds(invoice, invoice_id, timestamp)
     elseif invoice_type == "PrePaidScheduled" then
         print(string.format("Invoice %s is a PrePaidScheduled type and will be processed later based on the schedule.", invoice_id))
     else
@@ -294,10 +294,9 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
 end
 
 
-function ProcessFunds(invoice, invoice_id)
+function ProcessFunds(invoice, invoice_id, timestamp)
     local receivers = invoice.Receivers or {}
     local senders = invoice.Senders or {}
-    local timestamp = invoice.Timestamp or "N/A"
 
     if type(receivers) ~= "table" or #receivers == 0 then
         print("No receivers to process funds for.")
@@ -342,10 +341,9 @@ function ProcessFunds(invoice, invoice_id)
         -- Encode updated senders back to JSON
         local senders_json = json.encode(senders)
 
-        -- Update senders in the database
         local updateSendersQuery = string.format(
             "UPDATE Invoices SET Senders = '%s' WHERE InvoiceID = '%s';",
-            senders_json:gsub("'", "''"), -- Escape single quotes for SQL
+            senders_json:gsub("'", "''"),
             invoice_id
         )
 
@@ -664,14 +662,14 @@ Handlers.add( "CronTick", Handlers.utils.hasMatchingTag("Action", "Cron"),
     local timestamp_ms = msg["Timestamp"]
     local timestamp_seconds = math.floor(timestamp_ms / 1000)
 
-    print("Cron Timestamp: " .. timestamp_seconds)
+    -- print("Cron Timestamp: " .. timestamp_seconds)
 
-    ProcessScheduled()
+    ProcessScheduled( timestamp_seconds )
   end
 )
 
-function ProcessScheduled()
-    print("ProcessScheduled started")
+function ProcessScheduled( timestamp)
+    print("ProcessScheduled started: " .. timestamp)
 
     local query = [[
         SELECT * FROM Invoices 
@@ -705,7 +703,7 @@ function ProcessScheduled()
             OwnerName = invoiceRow.OwnerName,
         }
 
-        ProcessFunds(invoice, invoiceRow.InvoiceID)
+        ProcessFunds(invoice, invoiceRow.InvoiceID, timestamp )
     end
 
     print("ProcessScheduled completed")
