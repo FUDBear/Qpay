@@ -65,7 +65,7 @@ function InvoiceSelectMenu() {
                 </div>
             </button>
 
-            <button
+            {/* <button
                 onClick={handleSchedule}
                 className="bg-slate-100 min-w-full min-h-40 text-white font-semibold py-2 px-4 rounded hover:bg-slate-200 transition duration-300 ease-in-out" >
                 <div className="flex flex-col items-center justify-around mb-4">
@@ -79,7 +79,7 @@ function InvoiceSelectMenu() {
                     </span>
 
                 </div>
-            </button>
+            </button> */}
             
         </div>
         

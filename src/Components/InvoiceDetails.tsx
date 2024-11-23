@@ -407,14 +407,26 @@ function InvoiceDetails() {
                   <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-semibold">Paid</span>
                 </div>
                 <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50">
-                  Created - {ConvertTimestampToDateTime(invoice.Timestamp)}
+                  {ConvertTimestampToDateTime(invoice.Timestamp)}
                 </span>
               </div>
             ) : (
-              <div className="items-start">
-                <motion.div className="flex flex-row items-center space-x-2" whileHover={{ scale: 1.02 }} transition={{ type: "tween", stiffness: 100 }} >
+              // <div className="items-start">
+              //   <motion.div className="flex flex-row items-center space-x-2" whileHover={{ scale: 1.02 }} transition={{ type: "tween", stiffness: 100 }} >
+              //     <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
+                  
+              //   </motion.div>
+              //   <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50">
+              //       Created - {ConvertTimestampToDateTime(invoice.Timestamp)}
+              //     </span>
+              // </div>
+              <div className="relative flex items-center group">
+                <div className="items-center">
                 <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
-                </motion.div>
+                </div>
+                <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50">
+                  {ConvertTimestampToDateTime(invoice.Timestamp)}
+                </span>
               </div>
 
             )}

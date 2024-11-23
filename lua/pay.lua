@@ -707,7 +707,27 @@ function ProcessScheduled( timestamp)
             OwnerName = invoiceRow.OwnerName,
         }
 
-        ProcessFunds(invoice, invoiceRow.InvoiceID, timestamp )
+        local eligibleReceivers = {}
+        for _, receiver in ipairs(invoice.Receivers) do
+            local scheduledTimestamp = tonumber(receiver.ScheduledTimestamp or 0)
+            if scheduledTimestamp > 0 and timestamp >= scheduledTimestamp then
+                table.insert(eligibleReceivers, receiver)
+            else
+                print(string.format(
+                    "Skipping receiver: Address=%s, ScheduledTimestamp=%s, CurrentTimestamp=%d",
+                    receiver.Address or "N/A",
+                    receiver.ScheduledTimestamp or "N/A",
+                    timestamp
+                ))
+            end
+        end
+
+        if #eligibleReceivers > 0 then
+            invoice.Receivers = eligibleReceivers
+            ProcessFunds(invoice, invoiceRow.InvoiceID, timestamp)
+        else
+            print(string.format("No eligible receivers for InvoiceID: %s", invoiceRow.InvoiceID))
+        end
     end
 
     print("ProcessScheduled completed")
