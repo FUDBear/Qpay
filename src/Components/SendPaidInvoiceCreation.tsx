@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPaidInvoice } from '../MiscTools';
-import { RecieverCardData, PaidInvoiceData, Sender } from '../Types';
+import { RecieverCardData, PaidInvoiceData, Sender, Signer } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import ReceiverCard from './ReceiverCard';
@@ -31,6 +31,14 @@ function SendPaidInvoiceCreation() {
       UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
       RemoveReciever: () => handleRemoveRequestee(0),
       ScheduledTimestamp: "",
+    }
+  ]);
+  const [signers, setSigners] = useState<Signer[]>([
+    {
+      Address: "",
+      Name: "",
+      Status: "",
+      SignedTimestamp: "",
     }
   ]);
   const [note, setNote] = useState("");

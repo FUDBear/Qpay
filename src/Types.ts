@@ -45,6 +45,13 @@ export type Invoice = {
     Status: string;
     ScheduledTimestamp: string;
   };
+
+  export type Signer = {
+    Name: string;
+    Address: string;
+    Status: string;
+    SignedTimestamp: string;
+  };
   
   export type TokenInfo = {
     Name: string;

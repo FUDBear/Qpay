@@ -15,6 +15,7 @@ INVOICES = [[
     Category TEXT,
     Senders TEXT,
     Receivers TEXT,
+    Signers TEXT,
     Timestamp INTEGER,
     PaidTimestamp INTEGER,
     InvoiceNote TEXT,
@@ -25,7 +26,6 @@ INVOICES = [[
   );
 ]]
 
--- Note: Must Initialize the DB before using it
 function InitDb() 
     db:exec(INVOICES)
     print("--InitDb--")
@@ -34,7 +34,7 @@ function InitDb()
         PRAGMA foreign_keys = OFF;
         BEGIN TRANSACTION;
 
-        -- Create a temporary table with the unique constraint
+        -- Create a temporary table with the new "Signers" column
         CREATE TABLE IF NOT EXISTS Invoices_temp (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
             InvoiceID TEXT UNIQUE,  -- Add UNIQUE constraint here
@@ -42,6 +42,7 @@ function InitDb()
             Category TEXT,
             Senders TEXT,
             Receivers TEXT,
+            Signers TEXT,
             Timestamp INTEGER,
             PaidTimestamp INTEGER,
             InvoiceNote TEXT,
@@ -51,9 +52,12 @@ function InitDb()
             OwnerName TEXT
         );
 
-        -- Copy data from old table
-        INSERT OR IGNORE INTO Invoices_temp
-        SELECT * FROM Invoices;
+        -- Copy data from the old table
+        INSERT INTO Invoices_temp (
+            ID, InvoiceID, InvoiceType, Category, Senders, Receivers, Timestamp, PaidTimestamp, InvoiceNote, Amount, Status, Owner, OwnerName
+        )
+        SELECT ID, InvoiceID, InvoiceType, Category, Senders, Receivers, Timestamp, PaidTimestamp, InvoiceNote, Amount, Status, Owner, OwnerName
+        FROM Invoices;
 
         -- Drop old table and rename the new table
         DROP TABLE Invoices;
@@ -65,9 +69,9 @@ function InitDb()
     
     local result = db:exec(alterQuery)
     if result ~= sqlite3.OK then
-        print("Error applying UNIQUE constraint to InvoiceID.")
+        print("Error adding 'Signers' column to Invoices table.")
     else
-        print("UNIQUE constraint applied to InvoiceID successfully.")
+        print("'Signers' column added to Invoices table successfully.")
     end
 end
 
@@ -669,7 +673,7 @@ Handlers.add( "CronTick", Handlers.utils.hasMatchingTag("Action", "Cron"),
 )
 
 function ProcessScheduled( timestamp)
-    print("ProcessScheduled started: " .. timestamp)
+    -- print("ProcessScheduled started: " .. timestamp)
 
     local query = [[
         SELECT * FROM Invoices 
@@ -678,7 +682,7 @@ function ProcessScheduled( timestamp)
     local results = dbAdmin:exec(query)
 
     if #results == 0 then
-        print("No Pending PrePaidScheduled invoices found.")
+        -- print("No Pending PrePaidScheduled invoices found.")
         return
     end
 
