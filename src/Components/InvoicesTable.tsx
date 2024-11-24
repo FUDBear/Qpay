@@ -41,8 +41,8 @@ function InvoicesTable() {
   const ExportFiles = () => {
     if (invoices.length === 0) {
       console.log("No invoices to export.");
-      return;
-    }
+      return; 
+    } 
   
     const structuredData = invoices.flatMap((invoice) => {
       const senders = typeof invoice.Senders === "string" ? JSON.parse(invoice.Senders) : invoice.Senders || [];
