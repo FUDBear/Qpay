@@ -32,7 +32,7 @@ function InvoicesTable() {
       } finally {
         setLoading(false);
       }
-    };
+    }; 
 
     fetchInvoices();
 
