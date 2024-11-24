@@ -1,14 +1,14 @@
 import React, {useState} from 'react';
-import { RecieverCardData } from "../Types";
+import { RecieverCardData, SignerCardData } from "../Types";
 import Swal from 'sweetalert2';
 
-const SignerCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateReciever: UpdateRequestee, RemoveReciever: RemoveRequestee, Index}) => {
+const SignerCard: React.FC<SignerCardData> = ({ Address, UpdateSigner: UpdateRequestee, RemoveSigner: RemoveRequestee, Index}) => {
   
   const showDeleteConfirm = () => {
 
     Swal.fire({
-        title: 'Delete Payment Receiver?',
-        text: 'Are you sure you want to delete this payment receiver?',
+        title: 'Delete Payment Signer?',
+        text: 'Are you sure you want to delete this payment signer?',
         color: "black",
         icon: 'question',
         confirmButtonText: 'Yes',
@@ -48,25 +48,6 @@ const SignerCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateRecieve
         
       </div>
 
-
-      <div>
-        <label className="block text-gray-700 font-bold mb-2">Amount</label>
-        <input
-            type="text"
-            value={Amount}
-            onChange={(e) => {
-            const value = e.target.value;
-            if (/^\d*\.?\d*$/.test(value)) {
-                UpdateRequestee("Amount", value);
-            }
-            }}
-            className="border bg-slate-100 rounded-lg py-2 px-4 w-full focus:outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]"
-            placeholder="Enter Amount To Pay"
-            required
-        />
-      </div>
-
-      
     </div>
   );
 };

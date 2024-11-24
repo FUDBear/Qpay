@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPaidInvoice } from '../MiscTools';
-import { RecieverCardData, PaidInvoiceData, Sender } from '../Types';
+import { RecieverCardData, PaidInvoiceData, Sender, Signer, SignerCardData } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import ReceiverCard from './ReceiverCard';
+import SignerCard from './SignerCard';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
-import DatePickerToTimestamp from "./DatePickerToTimestamp";
 
-function ScheduledPaidInvoiceCreation() {
+function SendSignedInvoiceCreation() {
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 
@@ -17,22 +17,32 @@ function ScheduledPaidInvoiceCreation() {
   const [senderAmount, setSenderAmount] = useState("0.000");
   const [senders, setSenders] = useState<Sender[]>([
     {
-        Name: "",
-        Address: "",
-        Amount: "0.000",
-        Status: "Pending",
-        PaidTimestamp: "",
+      Name: "",
+      Address: "",
+      Amount: "0.000",
+      Status: "Pending",
+      PaidTimestamp: "",
     }
   ]);
   const [receivers, setReceivers] = useState<RecieverCardData[]>([
     {
-      Address: "",
-      Amount: "0.000",
-      Index: 0,
-      UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
-      RemoveReciever: () => handleRemoveRequestee(0),
-      ScheduledTimestamp: "",
-      Type: 'PrePaidScheduled',
+        Address: "",
+        Amount: "0.000",
+        Index: 0,
+        UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
+        RemoveReciever: () => handleRemoveRequestee(0),
+        ScheduledTimestamp: "",
+        Type: "PrePaidSigned",
+    }
+  ]);
+  const [signers, setSigners] = useState<SignerCardData[]>([
+    {
+        Name: "",
+        Address: "",
+        Index: 0,
+        UpdateSigner: (key, value) => handleUpdateSigner(0, key, value),
+        RemoveSigner: () => handleRemoveSigner(0),
+        Timestamp: "",
     }
   ]);
   const [note, setNote] = useState("");
@@ -86,14 +96,38 @@ function ScheduledPaidInvoiceCreation() {
 
   const handleAddRequestee = () => {
     const newRequestee: RecieverCardData = {
-      Address: "",
-      Amount: "0.000",
-      Index: receivers.length,
-      UpdateReciever: (key, value) => handleUpdateRequestee(receivers.length, key, value),
-      RemoveReciever: () => handleRemoveRequestee(receivers.length),
-      Type: 'PrePaidScheduled',
+        Address: "",
+        Amount: "0.000",
+        Index: receivers.length,
+        UpdateReciever: (key, value) => handleUpdateRequestee(receivers.length, key, value),
+        RemoveReciever: () => handleRemoveRequestee(receivers.length),
+        Type: "PrePaidSigned",
     };
     setReceivers([...receivers, newRequestee]);
+  };
+
+  const handleUpdateSigner = (index: number, key: keyof SignerCardData, value: string) => {
+    setSigners(prev =>
+      prev.map((req, i) => (i === index ? { ...req, [key]: value } : req))
+    );
+  };
+
+  const handleRemoveSigner = (index: number) => {
+    if (signers.length > 1) {
+      setSigners(signers.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleAddSigner = () => {
+    const newSigner: SignerCardData = {
+        Name: "",
+        Address: "",
+        Index: 0,
+        UpdateSigner: (key, value) => handleUpdateSigner(0, key, value),
+        RemoveSigner: () => handleRemoveSigner(0),
+        Timestamp: "",
+    };
+    setSigners([...signers, newSigner]);
   };
 
   const handleCreateInvoice = async () => {
@@ -114,9 +148,12 @@ function ScheduledPaidInvoiceCreation() {
           Status: "Pending" 
         };
 
-        for (let i = 0; i < receivers.length; i++) {
-          const newReciever = { Address: receivers[i].Address, Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), Status: "Pending" };
-        }
+        // for (let i = 0; i < receivers.length; i++) {
+        //   const newReciever = { 
+        //     Address: receivers[i].Address, 
+        //     Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), 
+        //     Status: "Pending" };
+        // }
 
         // const total = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
         let total = 0;
@@ -125,7 +162,9 @@ function ScheduledPaidInvoiceCreation() {
         }
         
         const newInvoice : PaidInvoiceData = {
-          InvoiceType: "PrePaidScheduled",
+          InvoiceType: receivers.some(req => req.ScheduledTimestamp && req.ScheduledTimestamp !== "") 
+                ? "PrePaidScheduled" 
+                : "PrePaid",
           Category: "Unknown",
           OwnerName: newSender.Name,
           SenderName: newSender.Name,
@@ -136,18 +175,23 @@ function ScheduledPaidInvoiceCreation() {
             Address: req.Address,
             Amount: (parseFloat(req.Amount) * 1e12).toFixed(0),
             Status: "Pending",
-            ScheduledTimestamp: "",
+            ScheduledTimestamp: req.ScheduledTimestamp? req.ScheduledTimestamp : "",
           })),
           Senders: [
             {
-                Name: newSender.Name,
-                Address: newSender.Address,
-                Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
-                Status: "Pending",
-                PaidTimestamp: "",
+              Name: newSender.Name,
+              Address: newSender.Address,
+              Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
+              Status: "Pending",
+              PaidTimestamp: ""
             }
           ],
-          Signers: [],
+          Signers: signers.map( signer => ({
+            Name: "",
+            Address: signer.Address,
+            Status: "Pending",
+            Timestamp: "",
+          })),
           Total: (total * 1e12).toFixed(0),
           InvoiceNote: note,
           Currency: "qAR",
@@ -178,7 +222,7 @@ function ScheduledPaidInvoiceCreation() {
 
       <div className="relative p-8 bg-[#ffffff] rounded-lg min-w-[400px] max-w-md mx-auto">
         
-      <h2 className="text-2xl font-semibold mb-4 text-[#2b3674]">Schedule Payment</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-[#2b3674]">Signed Payment</h2>
 
         <div className="space-y-4">
           <div>
@@ -192,10 +236,6 @@ function ScheduledPaidInvoiceCreation() {
               required
             />
           </div>
-
-          <div className="flex justify-center items-center bg-gray-50">
-            {/* <DatePickerToTimestamp /> */}
-            </div>
 
           <AnimatePresence>
             {receivers.map((r, index) => (
@@ -213,17 +253,38 @@ function ScheduledPaidInvoiceCreation() {
                   Index={index}
                   UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
                   RemoveReciever={() => handleRemoveRequestee(index)}
-                  Type={'PrePaidScheduled'}
+                  Type='PrePaidSigned'
                 />
               </motion.div>
             ))}
           </AnimatePresence>
 
-          {/* <div className="flex items-center justify-around">
-            <button onClick={handleAddRequestee} className="flex text-white rounded-full font-semibold hover:bg-slate-200 transition duration-300 ease-in-out">
+          <AnimatePresence>
+            {signers.map((signer, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.0 }}
+                transition={{ duration: 0.1 }}
+                className="flex items-center"
+              >
+                <SignerCard
+                    Name={signer.Name}
+                    Address={signer.Address}
+                    Index={index}
+                    UpdateSigner={(key, value) => handleUpdateSigner(index, key, value)}
+                    RemoveSigner={() => handleRemoveSigner(index)}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          <div className="flex items-center justify-around">
+            <button onClick={handleAddSigner} className="flex text-white rounded-full font-semibold hover:bg-slate-200 transition duration-300 ease-in-out">
               <img src={'./images/purple_icons/add_circle.svg'} alt="Add Invoice Reciever" className="w-8 h-8" />
             </button>
-          </div> */}
+          </div>
 
           <div>
             <label className="block text-gray-700 font-bold mb-2">Note</label>
@@ -247,4 +308,4 @@ function ScheduledPaidInvoiceCreation() {
   );
 }
 
-export default ScheduledPaidInvoiceCreation;
+export default SendSignedInvoiceCreation;

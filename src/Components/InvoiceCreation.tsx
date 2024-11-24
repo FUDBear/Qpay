@@ -20,6 +20,7 @@ function InvoiceCreation() {
       Index: 0,
       UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
       RemoveReciever: () => handleRemoveRequestee(0),
+      Type: 'Standard',
     }
   ]);
   const [receivers, setReceivers] = useState<Receiver[]>([
@@ -87,6 +88,7 @@ function InvoiceCreation() {
       Index: senders.length,
       UpdateReciever: (key, value) => handleUpdateRequestee(senders.length, key, value),
       RemoveReciever: () => handleRemoveRequestee(senders.length),
+      Type: 'Standard',
     };
     setSenders([...senders, newRequestee]);
   };
@@ -181,11 +183,12 @@ function InvoiceCreation() {
                 className="flex items-center"
               >
                 <RequesteeCard
-                  Address={requestee.Address}
-                  Amount={requestee.Amount}
-                  Index={index}
-                  UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
-                  RemoveReciever={() => handleRemoveRequestee(index)}
+                    Address={requestee.Address}
+                    Amount={requestee.Amount}
+                    Index={index}
+                    UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
+                    RemoveReciever={() => handleRemoveRequestee(index)}
+                    Type='Standard'
                 />
               </motion.div>
             ))}

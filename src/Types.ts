@@ -8,6 +8,7 @@ export type Invoice = {
     ReceiverWallet: string;
     Senders: Sender[];
     Receivers: Receiver[];
+    Signers: Signer[];
     Amount: number;
     Currency: string;
     Status: string;
@@ -24,6 +25,7 @@ export type Invoice = {
     SenderWallet: string;
     Receivers: Receiver[];
     Senders: Sender[];
+    Signers: Signer[];
     Currency: string;
     Status: string;
     InvoiceNote: string;
@@ -50,7 +52,7 @@ export type Invoice = {
     Name: string;
     Address: string;
     Status: string;
-    SignedTimestamp: string;
+    Timestamp: string;
   };
   
   export type TokenInfo = {
@@ -80,6 +82,16 @@ export type RecieverCardData = {
   UpdateReciever: (key: keyof RecieverCardData, value: string) => void;
   RemoveReciever: () => void;
   ScheduledTimestamp?: string;
+  Type: string;
+};
+
+export type SignerCardData = {
+  Name: string;
+  Address: string;
+  Index: number;
+  UpdateSigner: (key: keyof SignerCardData, value: string) => void;
+  RemoveSigner: () => void;
+  Timestamp?: string;
 };
 
   

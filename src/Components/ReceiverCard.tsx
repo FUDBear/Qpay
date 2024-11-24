@@ -3,7 +3,7 @@ import { RecieverCardData } from "../Types";
 import Swal from 'sweetalert2';
 import DatePickerToTimestamp from './DatePickerToTimestamp';
 
-const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateReciever: UpdateRequestee, RemoveReciever: RemoveRequestee, Index}) => {
+const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateReciever: UpdateRequestee, RemoveReciever: RemoveRequestee, Index, Type}) => {
   
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -55,7 +55,7 @@ const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateRecie
         <div className="flex justify-between items-center">
           <label className="text-gray-700 font-bold">Send Q-AR To</label>
           <div className="flex items-center space-x-2">
-            <button
+            { Type === "PrePaidScheduled" && <button
               onClick={toggleDatePicker}
               className="flex items-center rounded-xl text-white font-semibold py-2 px-2 hover:bg-gray-200 transition duration-300 ease-in-out"
             >
@@ -64,7 +64,7 @@ const RecieverCard: React.FC<RecieverCardData> = ({ Address, Amount, UpdateRecie
                 alt="New Invoice"
                 className="w-6 h-6"
               />
-            </button>
+            </button> }
           </div>
         </div>
         <input

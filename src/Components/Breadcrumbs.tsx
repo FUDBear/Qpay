@@ -11,6 +11,7 @@ function Breadcrumbs() {
     send: 'Send',
     request: 'Request',
     scheduled_payment: 'Scheduled Payment',
+    signed_payment: 'Signed Payment',
   };
 
   return (

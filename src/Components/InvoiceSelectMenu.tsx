@@ -19,6 +19,10 @@ function InvoiceSelectMenu() {
         navigate("/invoicecreation/scheduled_payment");
     }
 
+    const handleSigned = () => {
+        navigate("/invoicecreation/signed_payment");
+    }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <Breadcrumbs />
@@ -65,21 +69,21 @@ function InvoiceSelectMenu() {
                 </div>
             </button>
 
-            {/* <button
-                onClick={handleSchedule}
+            <button
+                onClick={handleSigned}
                 className="bg-slate-100 min-w-full min-h-40 text-white font-semibold py-2 px-4 rounded hover:bg-slate-200 transition duration-300 ease-in-out" >
                 <div className="flex flex-col items-center justify-around mb-4">
 
-                    <motion.img src={'./images/purple_icons/schedule_send.svg'} alt="Schedule Invoice" className="w-20 h-20"
+                    <motion.img src={'./images/purple_icons/signature.svg'} alt="Signed Invoice" className="w-20 h-20"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.3, duration: 0.5 }} />
                     <span className="text-xl font-semibold text-[#2b3674]">
-                        Schedule Payment 
+                        Multi Sig Payment
                     </span>
 
                 </div>
-            </button> */}
+            </button>
             
         </div>
         

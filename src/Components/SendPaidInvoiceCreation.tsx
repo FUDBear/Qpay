@@ -31,6 +31,7 @@ function SendPaidInvoiceCreation() {
       UpdateReciever: (key, value) => handleUpdateRequestee(0, key, value),
       RemoveReciever: () => handleRemoveRequestee(0),
       ScheduledTimestamp: "",
+      Type: 'PrePaidScheduled',
     }
   ]);
   const [signers, setSigners] = useState<Signer[]>([
@@ -38,7 +39,7 @@ function SendPaidInvoiceCreation() {
       Address: "",
       Name: "",
       Status: "",
-      SignedTimestamp: "",
+      Timestamp: "",
     }
   ]);
   const [note, setNote] = useState("");
@@ -97,6 +98,7 @@ function SendPaidInvoiceCreation() {
       Index: receivers.length,
       UpdateReciever: (key, value) => handleUpdateRequestee(receivers.length, key, value),
       RemoveReciever: () => handleRemoveRequestee(receivers.length),
+      Type: 'PrePaidScheduled',
     };
     setReceivers([...receivers, newRequestee]);
   };
@@ -157,6 +159,7 @@ function SendPaidInvoiceCreation() {
               PaidTimestamp: ""
             }
           ],
+          Signers: [],
           Total: (total * 1e12).toFixed(0),
           InvoiceNote: note,
           Currency: "qAR",
@@ -218,6 +221,7 @@ function SendPaidInvoiceCreation() {
                   Index={index}
                   UpdateReciever={(key, value) => handleUpdateRequestee(index, key, value)}
                   RemoveReciever={() => handleRemoveRequestee(index)}
+                  Type={'PrePaidScheduled'}
                 />
               </motion.div>
             ))}
