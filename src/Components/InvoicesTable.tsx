@@ -130,7 +130,7 @@ function InvoicesTable() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-semibold text-[#2b3674]">Invoices</h2>
         
-        <div className="flex space-x-4">
+        <div className="flex justify-around">
           
           <div className="relative flex items-center group">
             <button

@@ -241,6 +241,14 @@ function InvoiceDetails() {
     return invoice?.Owner === ADDRESS && invoice?.Status === 'Pending';
   };
 
+  // This is gross and needs to be refactored
+  const getScheduledPaymentTime = () => {
+    if( parsedReceivers && parsedReceivers.length > 0 ) {
+      return  "" + ConvertTimestampToDateTime(parsedReceivers[0].ScheduledTimestamp);
+    } 
+    return "";
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen w-screen">
@@ -410,13 +418,31 @@ function InvoiceDetails() {
 
                     </div>
                   ) : (
-                    <div className="items-start">
-                      <motion.div className="flex flex-row items-center space-x-2" whileHover={{ scale: 1.02 }} transition={{ type: "tween", stiffness: 100 }} >
-                      <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
-                      </motion.div>
-                    </div>
+                   
+                   <>
+                    {invoice?.InvoiceType !== "PrePaidScheduled" && (
+                      <div className="relative flex items-center group">
+                        <div className="items-center">
+                          <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {invoice?.InvoiceType === "PrePaidScheduled" && (
+                      <div className="relative flex items-center group">
+                         <div className="items-center">
+                           <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Scheduled</span>
+                         </div>
+                        <span className="absolute bottom-full right-0 mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50 whitespace-nowrap">
+                          {getScheduledPaymentTime()}
+                         </span>
+                      </div>
+                    )}
+
+                    </>
 
                   )}
+
                   </div>
                 </motion.div>
               ))
@@ -549,7 +575,8 @@ function InvoiceDetails() {
             )}
           </div>
 
-          {requestee?.Status === 'Pending' && requestee?.Address === ADDRESS && invoice.InvoiceType !== "PrePaidSigned"  &&(
+          {requestee?.Status === 'Pending' && requestee?.Address === ADDRESS && invoice.InvoiceType !== "PrePaidSigned"
+          && invoice.InvoiceType !== "PrePaidScheduled"  &&(
             
             <div className="flex flex-col items-center mb-2">
               <button

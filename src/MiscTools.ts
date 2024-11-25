@@ -353,10 +353,10 @@ export const GetQARBalance = async (address: string): Promise<number> => {
                     { name: 'Target', value: address },
                 ],
             });
-            console.log( "messageResponse: " ,messageResponse );
+            // console.log( "messageResponse: " ,messageResponse );
             const balanceTag = messageResponse.Messages[0].Tags.find((tag: Tag) => tag.name === 'Balance')
             const balance = balanceTag ? balanceTag.value : 0;
-            console.log( "Balance: " , balance );
+            // console.log( "Balance: " , balance );
             return balance;
 
         } catch (error) {
@@ -364,7 +364,7 @@ export const GetQARBalance = async (address: string): Promise<number> => {
             return 0;
         }
     } else {
-        console.log("No address provided.");
+        // console.log("No address provided.");
         return 0;
     }
 };
