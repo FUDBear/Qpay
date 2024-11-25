@@ -327,6 +327,9 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
 end
 
 function ProcessFunds(invoice, invoice_id, timestamp)
+    
+    print(" ---------- ProcessFunds  " .. invoice_id .. " ----------")
+
     local receivers = invoice.Receivers or {}
     local senders = invoice.Senders or {}
 
@@ -335,9 +338,9 @@ function ProcessFunds(invoice, invoice_id, timestamp)
         return
     end
 
-    -- Process Receivers
     for _, receiver in ipairs(receivers) do
-        if not receiver.ScheduledTimestamp or receiver.ScheduledTimestamp == "" then
+        local scheduledTimestamp = tonumber(receiver.ScheduledTimestamp or "")
+        if not scheduledTimestamp or scheduledTimestamp <= timestamp then
             if receiver.Address and tonumber(receiver.Amount) then
                 Send({
                     Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8",
@@ -350,11 +353,10 @@ function ProcessFunds(invoice, invoice_id, timestamp)
                 print("Invalid receiver data: Address or Amount is missing.")
             end
         else
-            print(string.format("Skipping receiver with ScheduledTimestamp: %s", receiver.ScheduledTimestamp))
+            print(string.format("Skipping receiver with ScheduledTimestamp: %s (current timestamp: %s)", scheduledTimestamp, timestamp))
         end
     end
 
-    -- Update Senders
     if type(senders) == "table" then
         print("Updating Senders list:")
         for i, senderObj in ipairs(senders) do
@@ -370,7 +372,6 @@ function ProcessFunds(invoice, invoice_id, timestamp)
             ))
         end
 
-        -- Encode updated senders back to JSON
         local senders_json = json.encode(senders)
 
         local updateSendersQuery = string.format(
@@ -389,7 +390,6 @@ function ProcessFunds(invoice, invoice_id, timestamp)
         print("Error: Senders is not a table. Actual type: " .. type(senders))
     end
 
-    -- Update the Invoice Status in the Database
     local updateQuery = string.format(
         "UPDATE Invoices SET Status = 'Paid', PaidTimestamp = %d WHERE InvoiceID = '%s';",
         timestamp,
@@ -843,6 +843,7 @@ function ProcessScheduled( timestamp)
 
         if #eligibleReceivers > 0 then
             invoice.Receivers = eligibleReceivers
+            print(string.format("Processing funds for InvoiceID: %s", invoiceRow.InvoiceID))
             ProcessFunds(invoice, invoiceRow.InvoiceID, timestamp)
         else
             print(string.format("No eligible receivers for InvoiceID: %s", invoiceRow.InvoiceID))
