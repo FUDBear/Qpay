@@ -79,7 +79,7 @@ function InvoiceSelectMenu() {
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.3, duration: 0.5 }} />
                     <span className="text-xl font-semibold text-[#2b3674]">
-                        Multi Sig Payment
+                        Signed Payment
                     </span>
 
                 </div>

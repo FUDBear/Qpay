@@ -4,7 +4,7 @@ import ClipLoader from "react-spinners/ClipLoader";
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPayMessage } from '../MiscTools';
 import InvoiceCell from './InvoiceCell';
-import { Invoice, Receiver, Sender } from '../Types';
+import { Invoice, Receiver, Sender, Signer } from '../Types';
 import * as XLSX from 'xlsx';
 
 function InvoicesTable() {
@@ -47,7 +47,9 @@ function InvoicesTable() {
     const structuredData = invoices.flatMap((invoice) => {
       const senders = typeof invoice.Senders === "string" ? JSON.parse(invoice.Senders) : invoice.Senders || [];
       const receivers = typeof invoice.Receivers === "string" ? JSON.parse(invoice.Receivers) : invoice.Receivers || [];
-  
+      const signers = typeof invoice.Signers === "string" ? JSON.parse(invoice.Signers) : invoice.Signers || [];
+      console.log("signers: ", signers);
+
       const baseRow = {
         InvoiceID: invoice.InvoiceID || "N/A",
         OwnerName: invoice.OwnerName || "N/A",

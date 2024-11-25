@@ -162,9 +162,7 @@ function SendSignedInvoiceCreation() {
         }
         
         const newInvoice : PaidInvoiceData = {
-          InvoiceType: receivers.some(req => req.ScheduledTimestamp && req.ScheduledTimestamp !== "") 
-                ? "PrePaidScheduled" 
-                : "PrePaid",
+          InvoiceType: "PrePaidSigned",
           Category: "Unknown",
           OwnerName: newSender.Name,
           SenderName: newSender.Name,

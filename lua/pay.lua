@@ -91,10 +91,11 @@ local function insertUser(pid, nickname)
 end
 
 local function insertInvoice(invoice)
-    print("Insert Invoice")
+    print("--------------- Insert Invoice ---------------")
 
     local senders_json = json.encode(invoice.Senders or {})
     local receivers_json = json.encode(invoice.Receivers or {})
+    local signers_json = json.encode(invoice.Signers or {})
     local invoice_note = invoice.InvoiceNote or ""
     local invoice_status = invoice.Status or "Pending"
     local invoice_type = invoice.InvoiceType or "Payment"
@@ -103,8 +104,6 @@ local function insertInvoice(invoice)
     local paid_timestamp = invoice.PaidTimestamp or 0
     local owner = invoice.Owner or "Unknown"
     local owner_name = invoice.OwnerName or "Unknown"
-
-    print("Inserting invoice with receivers JSON")
 
     local invoice_amount = invoice.Amount or 0
     if type(invoice.Amount) ~= "number" then
@@ -115,13 +114,14 @@ local function insertInvoice(invoice)
     end
 
     local query = string.format([[
-      INSERT INTO Invoices (Owner, OwnerName, Senders, Receivers, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
-      VALUES ("%s", "%s", '%s', '%s', %d, "%s", %d, "%s", "%s", "%s");
+      INSERT INTO Invoices (Owner, OwnerName, Senders, Receivers, Signers, Timestamp, InvoiceNote, Amount, Status, InvoiceType, Category) 
+      VALUES ("%s", "%s", '%s', '%s', '%s', %d, "%s", %d, "%s", "%s", "%s");
     ]], 
     owner, 
     owner_name,
     senders_json, 
     receivers_json, 
+    signers_json,
     timestamp, 
     invoice_note, 
     invoice_amount, 
@@ -146,6 +146,8 @@ local function insertInvoice(invoice)
         ProcessFunds(invoice, invoice_id, timestamp)
     elseif invoice_type == "PrePaidScheduled" then
         print(string.format("Invoice %s is a PrePaidScheduled type and will be processed later based on the schedule.", invoice_id))
+    elseif invoice_type == "PrePaidSigned" then
+        print(string.format("Invoice %s is a PrePaidSigned type", invoice_id))
     else
         print(string.format("Invoice %s has an unrecognized type: %s.", invoice_id, invoice_type))
     end
@@ -215,6 +217,14 @@ local function printInvoiceById(invoiceId)
             print("    ScheduledTimestamp: " .. (receiver.ScheduledTimestamp or "N/A"))
         end
 
+        local signers = json.decode(row.Signers or '[]')
+        print("Signers:")
+        for _, signer in ipairs(signers) do
+            print("  - Address: " .. (signer.Address or "N/A"))
+            print("    Status: " .. (signer.Status or "N/A"))
+            print("    Timestamp: " .. (signer.Timestamp or "N/A"))
+        end
+
         print("--------------------------------------------------")
     end
 end
@@ -235,6 +245,7 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
     local invoice_amount = tonumber(invoiceData.Total or quantity)
     local senders = invoiceData.Senders or {}
     local receivers = invoiceData.Receivers or {}
+    local signers = invoiceData.Signers or {}
     local invoice_type = invoiceData.InvoiceType or "PrePaid"
     local category = invoiceData.Category or "Uncategorized"
     local owner = sender
@@ -277,6 +288,23 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
         print("Error: Receivers is not a table. Actual type: " .. type(receivers))
     end
 
+    if type(signers) == "table" then
+        print("Signers list:")
+        for i, signerObj in ipairs(signers) do
+            
+            print(string.format(
+                "Signer %d: Name: %s, Address: %s, Status: %s, Timestamp: %s",
+                i,
+                signerObj.Name or "N/A",
+                signerObj.Address or "N/A",
+                signerObj.Status or "N/A",
+                signerObj.Timestamp or "N/A"
+            ))
+        end
+    else
+        print("Error: Signers is not a table. Actual type: " .. type(signers))
+    end
+
     local invoice = {
         Timestamp = timestamp_seconds,
         InvoiceNote = invoice_note,
@@ -284,6 +312,7 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
         Status = "Pending",
         Senders = senders,
         Receivers = receivers,
+        Signers = signers,
         InvoiceType = invoice_type,
         Category = category,
         Owner = owner,
@@ -296,7 +325,6 @@ function CreatePrePaidInvoice(paidInvoice, sender, quantity, msg)
     local invoice_json = json.encode(invoice)
     Send({ Target = msg.From, Data = invoice_json })
 end
-
 
 function ProcessFunds(invoice, invoice_id, timestamp)
     local receivers = invoice.Receivers or {}
@@ -376,8 +404,6 @@ function ProcessFunds(invoice, invoice_id, timestamp)
 
     print("Funds processing complete.")
 end
-
-
 
 function PayInvoice(invoiceId, sender, quantity, msg)
     print("Paying InvoiceID: " .. invoiceId)
@@ -510,6 +536,7 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
         Status = "Pending",
         Senders = senders,
         Receivers = receivers,
+        Signers = "",
         InvoiceType = invoice_type,
         Category = category,
         Owner = owner,
@@ -576,6 +603,14 @@ Handlers.add("GetAddressInvoices", "Get-Address-Invoices", function (msg)
                 break
             end
         end
+
+        local signers = json.decode(invoice.Signers or '[]')
+        for _, signer in ipairs(signers) do
+            if signer.Address == address then
+                table.insert(matching_invoices, invoice)
+                break
+            end
+        end
     end
 
     if #matching_invoices == 0 then
@@ -610,7 +645,7 @@ Handlers.add("GetInvoiceById", "Get-Invoice-By-Id", function (msg)
     print("Fetching invoice with ID: " .. invoiceId)
     local invoice = dbAdmin:exec(query)
 
-    printInvoiceById( invoiceId );
+    -- printInvoiceById( invoiceId );
 
     if #invoice == 0 then
         print("No invoice found with ID: " .. invoiceId)
@@ -623,10 +658,96 @@ Handlers.add("GetInvoiceById", "Get-Invoice-By-Id", function (msg)
 end)
 
 
-Handlers.add(
-    "Credit-Notice",
-    Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
-    function (msg)
+------ || Signed Invoice || ------
+
+Handlers.add("SignInvoiceById", "Sign-Invoice-By-Id", function (msg)
+
+    local data = json.decode(msg.Data)
+    local invoiceId = data.InvoiceID
+    local signer = msg.From
+
+    print("SignInvoiceById: " .. invoiceId .. " Signer: " .. signer)
+
+    if not invoiceId then
+        print("No InvoiceID provided.")
+        Send({ Target = msg.From, Data = json.encode({ error = "InvoiceID is required." }) })
+        return
+    end
+
+    local query = string.format([[
+      SELECT * FROM Invoices 
+      WHERE InvoiceID = "%s";
+    ]], invoiceId)
+
+    print("Fetching invoice with ID: " .. invoiceId)
+    local result = dbAdmin:exec(query)
+
+    if #result == 0 then
+        print("No invoice found with ID: " .. invoiceId)
+        Send({ Target = msg.From, Data = json.encode({ error = "No invoice found with the provided ID." }) })
+        return
+    end
+
+    local invoice = result[1]
+    local signers = json.decode(invoice.Signers or "[]")
+    invoice.Receivers = json.decode(invoice.Receivers or "[]")
+    invoice.Senders = json.decode(invoice.Senders or "[]")
+    local timestamp_ms = msg["Timestamp"]
+    local timestamp_seconds = math.floor(timestamp_ms / 1000)
+
+    local signerFound = false
+
+    for _, signerObj in ipairs(signers) do
+        if signerObj.Address == signer then
+            signerObj.Status = "Signed"
+            signerObj.Timestamp = timestamp_seconds
+            signerFound = true
+            break
+        end
+    end
+
+    if not signerFound then
+        print("Signer not found in the invoice.")
+        Send({ Target = msg.From, Data = json.encode({ error = "Signer not found in the invoice." }) })
+        return
+    end
+
+    local updatedSignersJson = json.encode(signers)
+    local updateSignersQuery = string.format([[
+      UPDATE Invoices 
+      SET Signers = '%s'
+      WHERE InvoiceID = "%s";
+    ]], updatedSignersJson:gsub("'", "''"), invoiceId)
+
+    local success = dbAdmin:exec(updateSignersQuery)
+    if success then
+        print("Signers updated successfully in the database.")
+    else
+        print("Failed to update signers in the database.")
+    end
+
+    local allSigned = true
+    for _, signerObj in ipairs(signers) do
+        if signerObj.Status ~= "Signed" then
+            allSigned = false
+            break
+        end
+    end
+
+    if allSigned then
+        print("All signers have signed. Processing funds...")
+        ProcessFunds(invoice, invoiceId, timestamp_seconds)
+    else
+        print("Not all signers have signed yet.")
+    end
+
+    Send({ Target = msg.From, Data = "Success" })
+
+    -- Send({ Target = msg.From, Data = json.encode({ success = true, message = "Signer updated successfully." }) })
+end)
+
+
+Handlers.add( "Credit-Notice", Handlers.utils.hasMatchingTag("Action", "Credit-Notice"), function (msg)
 
         local invoiceId = msg["X-[INVOICEID]"] or "" 
         local paidInvoice = msg["X-[PAID_INVOICE]"] or ""
@@ -645,7 +766,7 @@ Handlers.add(
             print("No valid X-[INVOICEID] or X-[PAID_INVOICE] tag found.")
         end
 
-        -- If incorrect amount of id, then add to a LOOSE_PAYMENTS db
+        -- If incorrect amount or id, then add to a LOOSE_PAYMENTS db
     end
 )
 
@@ -666,14 +787,13 @@ Handlers.add( "CronTick", Handlers.utils.hasMatchingTag("Action", "Cron"),
     local timestamp_ms = msg["Timestamp"]
     local timestamp_seconds = math.floor(timestamp_ms / 1000)
 
-    -- print("Cron Timestamp: " .. timestamp_seconds)
-
     ProcessScheduled( timestamp_seconds )
   end
 )
 
 function ProcessScheduled( timestamp)
-    -- print("ProcessScheduled started: " .. timestamp)
+
+    print("--------------- ProcessScheduled ---------------")
 
     local query = [[
         SELECT * FROM Invoices 
@@ -682,7 +802,6 @@ function ProcessScheduled( timestamp)
     local results = dbAdmin:exec(query)
 
     if #results == 0 then
-        -- print("No Pending PrePaidScheduled invoices found.")
         return
     end
 
@@ -758,18 +877,6 @@ Handlers.add("CleanTables", "Clean-Tables", function (msg)
     dbAdmin:exec(query)
 end)
 
--- This shoul dbe removed asap
--- Handlers.add("AddTable", "AddTable", function (msg)    
---     print( "AddTable Hit!" ) 
-
---     if dbAdmin then
---         print("dbAdmin is not nil")
---     else
---         print("dbAdmin is nil")
---     end
-
--- end)
-
 Handlers.add("AdminDeleteInvoice", "Admin-Delete-Invoice", function(msg)
 
     -- admin only
@@ -781,12 +888,6 @@ Handlers.add("AdminDeleteInvoice", "Admin-Delete-Invoice", function(msg)
     print("AdminDeleteInvoice triggered.")
 
     local invoiceId = msg.ID
-
-    if not invoiceId then
-        print("No InvoiceID provided.")
-        Send({ Target = msg.From, Action = "Admin-Delete-Invoice", Error = "InvoiceID is required." })
-        return
-    end
 
     local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
     local invoice = dbAdmin:exec(query)

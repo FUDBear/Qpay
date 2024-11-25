@@ -6,7 +6,7 @@ import { SendInvoicePayment, SendPayMessage, ConvertTimestampToDateTime,
   FormatBalanceDecimal, SendProcessMessage, FormatBalance, 
   GetQARBalance, TruncateAddress } from '../MiscTools';
 import ClipLoader from 'react-spinners/ClipLoader';
-import { Invoice, Sender, Receiver } from "../Types";
+import { Invoice, Sender, Receiver, Signer } from "../Types";
 import Breadcrumbs from './Breadcrumbs';
 import CopyButton from './CopyButton';
 import QRCode from "react-qr-code";
@@ -22,6 +22,7 @@ function InvoiceDetails() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [parsedSenders, setParsedSenders] = useState<Sender[]>([]);
   const [parsedReceivers, setParsedReceivers] = useState<Receiver[]>([]);
+  const [parsedSigners, setParsedSigners] = useState<Signer[]>([]);
   const [requestee, setRequestee] = useState<Sender | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -67,6 +68,31 @@ function InvoiceDetails() {
     Swal.fire({
       title: 'Invoice Error',
       text: 'Payment failed',
+      color: "black",
+      icon: 'error',
+      confirmButtonText: 'Done',
+    });
+  };
+
+  const showSignSuccess = () => {
+    Swal.fire({
+      title: 'Success!',
+      text: 'Your invoice has been successfully signed',
+      color: "black",
+      icon: 'success',
+      confirmButtonText: 'Done',
+      confirmButtonColor: '#4318FF',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate("/");
+      }
+    });
+  };
+
+  const showSignFail = () => {
+    Swal.fire({
+      title: 'Invoice Error',
+      text: 'Signature failed',
       color: "black",
       icon: 'error',
       confirmButtonText: 'Done',
@@ -125,6 +151,21 @@ function InvoiceDetails() {
     }
   }, [invoice?.Receivers]);
 
+
+  useEffect(() => {
+    if (typeof invoice?.Signers === "string") {
+      try {
+        const signersArray: Signer[] = JSON.parse(invoice.Signers);
+        setParsedSigners(signersArray);
+      } catch (error) {
+        console.error("Failed to parse signers JSON:", error);
+        setParsedSigners([]);
+      }
+    } else if (Array.isArray(invoice?.Receivers)) {
+      setParsedReceivers([]);
+    }
+  }, [invoice?.Signers]);
+
   useEffect(() => {
     const foundRequestee = parsedSenders.find((requestee) => requestee.Address === ADDRESS);
 
@@ -170,6 +211,28 @@ function InvoiceDetails() {
 
       } catch (error) {
         console.error("Failed to pay invoice:", error);
+      }
+    }
+  };
+
+  const handleSignInvoice = async () => {
+
+    if (invoice) {
+      // console.log("Signing invoice:", invoice);
+      try {
+        const signResult = await SendPayMessage("Sign-Invoice-By-Id", JSON.stringify({ InvoiceID: id }));
+        console.log("Signature result:", signResult);
+        // setInvoice((prev) => prev ? { ...prev, Status: 'Paid', PaidTimestamp: Math.floor(Date.now() / 1000).toString()  } : null);
+        // getBalance();
+
+        if(signResult !== "") {
+          showSignSuccess();
+        } else {
+          showSignFail();
+        }
+
+      } catch (error) {
+        console.error("Failed to sign invoice:", error);
       }
     }
   };
@@ -367,6 +430,60 @@ function InvoiceDetails() {
             </motion.div> */}
             
           </div>
+
+          {/* Signers */}
+          {parsedSigners.length > 0 && (
+            <div className="flex flex-col mb-2">
+              <div className="flex flex-row items-center space-x-2">
+                <img src={"./images/purple_icons/signature.svg"} alt="date" className="w-4 h-4" />
+                <span className="font-semibold">Signers</span>
+              </div>
+
+              {parsedSigners.map((signer, index) => (
+                <motion.div 
+                  key={index} 
+                  className={`flex flex-row justify-around mb-2 p-2 rounded-lg ${
+                    signer.Address === ADDRESS 
+                      ? signer.Status === "Signed" 
+                        ? "bg-green-50" 
+                        : "bg-orange-50"
+                      : "bg-slate-50"
+                  }`}
+                  whileHover={{ scale: 1.02 }} 
+                  transition={{ type: "tween", stiffness: 100 }}
+                >
+                  <div className="flex flex-row items-center space-x-2">
+                    <span className="text-sm text-[#A3AED0]">{TruncateAddress(signer.Address)}</span>
+                    <CopyButton textToCopy={signer.Address} />
+                  </div>
+
+                  <div className="flex flex-row items-center space-x-2">
+                    {signer.Status === "Signed" ? (
+                      <div className="relative flex items-center group">
+                        <div className="items-center">
+                          <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-semibold">Signed</span>
+                        </div>
+                        <span className="absolute bottom-full right-0 mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50 whitespace-nowrap">
+                          Signed - {ConvertTimestampToDateTime(signer.Timestamp)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="items-start">
+                        <motion.div 
+                          className="flex flex-row items-center space-x-2" 
+                          whileHover={{ scale: 1.02 }} 
+                          transition={{ type: "tween", stiffness: 100 }}
+                        >
+                          <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
+                        </motion.div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
           
 
           {/* Amount */}
@@ -432,7 +549,7 @@ function InvoiceDetails() {
             )}
           </div>
 
-          {requestee?.Status === 'Pending' && requestee?.Address === ADDRESS  &&(
+          {requestee?.Status === 'Pending' && requestee?.Address === ADDRESS && invoice.InvoiceType !== "PrePaidSigned"  &&(
             
             <div className="flex flex-col items-center mb-2">
               <button
@@ -446,6 +563,18 @@ function InvoiceDetails() {
             </div>
             
           )}
+
+          { parsedSigners && parsedSigners.some(signer => signer.Address === ADDRESS && signer.Status === 'Pending') && (
+            <div className="flex flex-col items-center mb-2">
+              <button
+                onClick={handleSignInvoice}
+                className="bg-[#4318FF] text-white font-semibold py-2 px-4 rounded hover:bg-[#503BC4] transition duration-300 ease-in-out"
+              >
+                Sign Invoice
+              </button>
+            </div>
+          )}
+
 
       </div>
       ) : (
