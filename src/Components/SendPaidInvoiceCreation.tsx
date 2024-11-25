@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
-import { SendPaidInvoice } from '../MiscTools';
+import { SendPaidInvoice, FormatBalance } from '../MiscTools';
 import { RecieverCardData, PaidInvoiceData, Sender, Signer } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
@@ -13,7 +13,7 @@ function SendPaidInvoiceCreation() {
   const navigate = useNavigate();
 
   const [senderName, setSenderName] = useState("");
-  const [senderAmount, setSenderAmount] = useState("0.000");
+  const [senderAmount, setSenderAmount] = useState(0);
   const [senders, setSenders] = useState<Sender[]>([
     {
       Name: "",
@@ -103,6 +103,16 @@ function SendPaidInvoiceCreation() {
     setReceivers([...receivers, newRequestee]);
   };
 
+  useEffect(() => {
+    if (receivers.length > 0) {
+        let total = 0;
+        for(let i = 0; i < receivers.length; i++) {
+          total += parseFloat(receivers[i].Amount);
+        }
+        setSenderAmount(total);
+    }
+  } , [receivers]);
+
   const handleCreateInvoice = async () => {
     if (!senderName || receivers.some(req => !req.Address || !req.Amount) || !note) {
       showFail();
@@ -154,7 +164,7 @@ function SendPaidInvoiceCreation() {
             {
               Name: newSender.Name,
               Address: newSender.Address,
-              Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
+              Amount: (parseFloat(newSender.Amount.toString()) * 1e12).toFixed(0),
               Status: "Pending",
               PaidTimestamp: ""
             }
@@ -247,8 +257,11 @@ function SendPaidInvoiceCreation() {
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.6 }} onClick={handleCreateInvoice}
             className="bg-[#4318FF] text-white font-semibold py-3 px-6 rounded-xl hover:bg-[#503BC4] transition ease-in-out duration-200 shadow-lg mt-4 w-full"
           >
-            Send Payment
+            Send Payment 
+            { senderAmount > 0 && <span className="text-sm text-[#A3AED0]"> {senderAmount} qAR</span>}
           </motion.button>
+
+          
         </div>
       </div>
     </div>

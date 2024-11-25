@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
-import { SendPaidInvoice } from '../MiscTools';
+import { SendPaidInvoice, FormatBalance } from '../MiscTools';
 import { RecieverCardData, PaidInvoiceData, Sender } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
@@ -96,6 +96,17 @@ function ScheduledPaidInvoiceCreation() {
     setReceivers([...receivers, newRequestee]);
   };
 
+  useEffect(() => {
+    if (receivers.length === 0) {
+        let total = 0;
+        for(let i = 0; i < receivers.length; i++) {
+          total += parseFloat(receivers[i].Amount);
+        }
+
+        setSenderAmount(total.toString());
+    }
+  } , [receivers]);
+
   const handleCreateInvoice = async () => {
     if (!senderName || receivers.some(req => !req.Address || !req.Amount) || !note) {
       showFail();
@@ -118,11 +129,12 @@ function ScheduledPaidInvoiceCreation() {
           const newReciever = { Address: receivers[i].Address, Amount: (parseFloat(receivers[i].Amount) * 1e12).toFixed(0), Status: "Pending" };
         }
 
-        // const total = senders.reduce((acc, req) => acc + parseFloat(req.Amount), 0);
         let total = 0;
         for(let i = 0; i < receivers.length; i++) {
           total += parseFloat(receivers[i].Amount);
         }
+
+        setSenderAmount(total.toString());
         
         const newInvoice : PaidInvoiceData = {
           InvoiceType: "PrePaidScheduled",
@@ -239,7 +251,7 @@ function ScheduledPaidInvoiceCreation() {
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.6 }} onClick={handleCreateInvoice}
             className="bg-[#4318FF] text-white font-semibold py-3 px-6 rounded-xl hover:bg-[#503BC4] transition ease-in-out duration-200 shadow-lg mt-4 w-full"
           >
-            Send Payment
+            Send Payment { FormatBalance( parseInt(senderAmount) ) }
           </motion.button>
         </div>
       </div>

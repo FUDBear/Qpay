@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendPaidInvoice } from '../MiscTools';
@@ -14,7 +14,7 @@ function SendSignedInvoiceCreation() {
   const navigate = useNavigate();
 
   const [senderName, setSenderName] = useState("");
-  const [senderAmount, setSenderAmount] = useState("0.000");
+  const [senderAmount, setSenderAmount] = useState(0);
   const [senders, setSenders] = useState<Sender[]>([
     {
       Name: "",
@@ -130,6 +130,16 @@ function SendSignedInvoiceCreation() {
     setSigners([...signers, newSigner]);
   };
 
+  useEffect(() => {
+    if (receivers.length > 0) {
+        let total = 0;
+        for(let i = 0; i < receivers.length; i++) {
+          total += parseFloat(receivers[i].Amount);
+        }
+        setSenderAmount(total);
+    }
+  } , [receivers]);
+
   const handleCreateInvoice = async () => {
     if (!senderName || receivers.some(req => !req.Address || !req.Amount) || !note) {
       showFail();
@@ -179,7 +189,7 @@ function SendSignedInvoiceCreation() {
             {
               Name: newSender.Name,
               Address: newSender.Address,
-              Amount: (parseFloat(newSender.Amount) * 1e12).toFixed(0),
+              Amount: (parseFloat(newSender.Amount.toString()) * 1e12).toFixed(0),
               Status: "Pending",
               PaidTimestamp: ""
             }
@@ -299,6 +309,8 @@ function SendSignedInvoiceCreation() {
             className="bg-[#4318FF] text-white font-semibold py-3 px-6 rounded-xl hover:bg-[#503BC4] transition ease-in-out duration-200 shadow-lg mt-4 w-full"
           >
             Send Payment
+
+            { senderAmount > 0 && <span className="text-sm text-[#A3AED0]"> {senderAmount} qAR</span>}
           </motion.button>
         </div>
       </div>
