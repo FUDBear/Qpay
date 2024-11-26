@@ -19,11 +19,7 @@ Watch a video demonstration of Qpay in action:
 # Qpay v0.2 FullstackHack 2024
 
 ## PermaWeb App
-Qpay Dapp on the PermaWeb (In Development):
-[https://arweave.net/BzRm2FSzxIFjuUCCwl6bBA4xJfadNUdPsZldQz65qyo](https://arweave.net/BzRm2FSzxIFjuUCCwl6bBA4xJfadNUdPsZldQz65qyo)
-
-## ARNS
-[https://qpay.ar-io.dev/](https://qpay.ar-io.dev/)
+[https://fullstackhack_qpay.ar-io.dev/](https://fullstackhack_qpay.ar-io.dev/)
 
 ## Video Demo
 Video demonstration of Qpay 0.2 in action:

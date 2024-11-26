@@ -71,6 +71,10 @@ function InvoiceDetails() {
       color: "black",
       icon: 'error',
       confirmButtonText: 'Done',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate("/");
+      }
     });
   };
 
@@ -196,6 +200,8 @@ function InvoiceDetails() {
 
   const handlePayInvoice = async () => {
 
+    setLoading(true);
+
     if (requestee?.Status === 'Pending' && invoice) {
       try {
         const paymentResult = await SendInvoicePayment(ADDRESS, invoice.InvoiceID, requestee.Amount.toString());
@@ -216,6 +222,8 @@ function InvoiceDetails() {
   };
 
   const handleSignInvoice = async () => {
+
+    setLoading(true);
 
     if (invoice) {
       // console.log("Signing invoice:", invoice);
@@ -419,7 +427,7 @@ function InvoiceDetails() {
                     </div>
                   ) : (
                    
-                   <>
+                  <>
                     {invoice?.InvoiceType !== "PrePaidScheduled" && (
                       <div className="relative flex items-center group">
                         <div className="items-center">
@@ -439,7 +447,7 @@ function InvoiceDetails() {
                       </div>
                     )}
 
-                    </>
+                  </>
 
                   )}
 
@@ -586,7 +594,7 @@ function InvoiceDetails() {
                 Pay Invoice { FormatBalance( parseInt(requestee.Amount) ) }
               </button>
               
-              <span className="text-sm text-[#A3AED0]">Balance: {QARBALANCE} qAR</span>
+              { QARBALANCE && QARBALANCE > 0 && <span className="text-sm text-[#A3AED0]">Balance: {QARBALANCE} qAR</span>}
             </div>
             
           )}

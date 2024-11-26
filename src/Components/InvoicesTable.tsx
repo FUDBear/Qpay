@@ -119,7 +119,7 @@ function InvoicesTable() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Invoices");
   
-    XLSX.writeFile(workbook, "Invoices_Structured.xlsx");
+    XLSX.writeFile(workbook, "Invoices.xlsx");
     console.log("Invoices exported successfully.");
   };
   

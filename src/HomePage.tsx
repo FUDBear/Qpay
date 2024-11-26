@@ -81,21 +81,11 @@ function HomePage() {
         {/* Spacer */}
         <div className="h-16"></div>
 
-        {/* <div className="p-2 mx-auto">
-            <div className="flex items-center">
-            <img
-              src={"./images/Qpay Logo.svg"}
-              alt="QPay Logo"
-              className="w-full h-[50px] mb-2"
-            />
-            </div>
-        </div> */}
-
         <InvoicesTable />
 
         <div className="flex items-center justify-between mt-4">
-            <img src={"./images/Qpay Logo.svg"} alt="QPay Logo" className="w-full h-[30px]" />
-          </div>
+          <img src={"https://arweave.net/d0e7XeYWozLtuUdZ0pM0-bdS_5pb-XEOMudJCVWFM4w"} alt="QPay Logo" className="w-full h-[30px]" />
+        </div>
 
         </> }
 

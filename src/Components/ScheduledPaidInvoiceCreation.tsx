@@ -10,6 +10,7 @@ import { AnimatePresence, motion, Variants } from 'framer-motion';
 import DatePickerToTimestamp from "./DatePickerToTimestamp";
 
 function ScheduledPaidInvoiceCreation() {
+  
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 

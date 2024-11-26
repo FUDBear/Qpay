@@ -6,12 +6,16 @@ import { RecieverCardData, PaidInvoiceData, Sender, Signer } from '../Types';
 import Breadcrumbs from './Breadcrumbs';
 import Swal from 'sweetalert2';
 import ReceiverCard from './ReceiverCard';
+import ClipLoader from 'react-spinners/ClipLoader';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 
 function SendPaidInvoiceCreation() {
+
   const { ADDRESS } = useGlobalContext();
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(false);
+  
   const [senderName, setSenderName] = useState("");
   const [senderAmount, setSenderAmount] = useState(0);
   const [senders, setSenders] = useState<Sender[]>([
@@ -76,6 +80,10 @@ function SendPaidInvoiceCreation() {
       color: "black",
       icon: 'error',
       confirmButtonText: 'Done',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate("/");
+      }
     });
   };
 
@@ -114,6 +122,9 @@ function SendPaidInvoiceCreation() {
   } , [receivers]);
 
   const handleCreateInvoice = async () => {
+    
+    setLoading(true);
+
     if (!senderName || receivers.some(req => !req.Address || !req.Amount) || !note) {
       showFail();
       return;
@@ -180,7 +191,12 @@ function SendPaidInvoiceCreation() {
         const result = await SendPaidInvoice( newInvoice.SenderWallet, newInvoice.Total,
            JSON.stringify(newInvoice));
         console.log("Result: ", result);
-        showSuccess();
+
+        if(  result === "Success") {
+          showSuccess();
+        } else {
+          showFail();
+        }
       } else {
         console.log("ArConnect is not installed.");
       }
@@ -189,6 +205,14 @@ function SendPaidInvoiceCreation() {
       showFail();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen w-screen">
+        <ClipLoader color="#4318FF" loading={loading} size={50} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">

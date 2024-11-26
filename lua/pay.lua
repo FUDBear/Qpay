@@ -550,6 +550,7 @@ Handlers.add("CreateNewInvoice", "Create-New-Invoice", function (msg)
 end)
 
 Handlers.add("DeleteInvoice", "Delete-Invoice", function (msg)
+    
     local data = json.decode(msg.Data)
     local invoiceId = data.InvoiceID
     local senderWallet = msg.From
@@ -557,17 +558,48 @@ Handlers.add("DeleteInvoice", "Delete-Invoice", function (msg)
     print("DeleteInvoice: " .. invoiceId)
 
     local query = string.format("SELECT * FROM Invoices WHERE InvoiceID = '%s' AND Owner = '%s';", invoiceId, senderWallet)
-    local invoice = dbAdmin:exec(query)
+    local result = dbAdmin:exec(query)
 
-    if #invoice == 0 then
+    if #result == 0 then
         print("No matching invoice found or sender (" .. senderWallet .. ") is not authorized to delete.")
+        Send({ Target = msg.From, Data = json.encode({ error = "No matching invoice found or not authorized to delete." }) })
         return
     end
 
-    local deleteQuery = string.format("DELETE FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
-    dbAdmin:exec(deleteQuery)
+    local invoice = result[1]
+    local senders = json.decode(invoice.Senders or "[]")
 
-    print("Invoice " .. invoiceId .. " has been deleted by Owner: " .. senderWallet)
+    if type(senders) == "table" and #senders > 0 then
+        print("Refunding senders for invoice: " .. invoiceId)
+
+        for _, senderObj in ipairs(senders) do
+            -- Note: "Scheduled" status is not implemented yet, so doesnt work as of 11/25/24
+            if (senderObj.Status == "Paid" or senderObj.Status == "Scheduled") and senderObj.Amount and senderObj.Address then
+                Send({
+                    Target = "NG-0lVX882MG5nhARrSzyprEK6ejonHpdUmaaMPsHE8",
+                    Action = "Transfer",
+                    Quantity = tostring(senderObj.Amount),
+                    Recipient = senderObj.Address
+                })
+                print(string.format("Refunded %s tokens to sender: %s (Status: %s)", senderObj.Amount, senderObj.Address, senderObj.Status))
+            else
+                print(string.format("Skipping refund for sender: %s (Status: %s)", senderObj.Address or "N/A", senderObj.Status or "N/A"))
+            end
+        end
+    else
+        print("No senders to refund for invoice: " .. invoiceId)
+    end
+
+    local deleteQuery = string.format("DELETE FROM Invoices WHERE InvoiceID = '%s';", invoiceId)
+    local success = dbAdmin:exec(deleteQuery)
+
+    if success then
+        print("Invoice " .. invoiceId .. " has been deleted by Owner: " .. senderWallet)
+        Send({ Target = msg.From, Data = json.encode({ success = true, message = "Invoice deleted and senders refunded." }) })
+    else
+        print("Failed to delete invoice: " .. invoiceId)
+        Send({ Target = msg.From, Data = json.encode({ error = "Failed to delete invoice." }) })
+    end
 end)
 
 
