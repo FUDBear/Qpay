@@ -3,6 +3,7 @@ import { FormatBalance, GetQARBalance, FormatBalanceDecimal } from '../MiscTools
 import { useGlobalContext } from '../GlobalProvider';
 
 const BalanceButton = () => {
+  
   const { ADDRESS, QARBALANCE, setQARBALANCE } = useGlobalContext();
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { useGlobalContext } from '../GlobalProvider';
 import { SendInvoicePayment, SendPayMessage, ConvertTimestampToDateTime, 
@@ -15,7 +15,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 function InvoiceDetails() {
 
-  const { ADDRESS, QARBALANCE, setQARBALANCE } = useGlobalContext();
+  const { ADDRESS, setADDRESS, QARBALANCE, setQARBALANCE } = useGlobalContext();
+
+  const location = useLocation();
   const navigate = useNavigate();
 
   const { id } = useParams();
@@ -104,6 +106,19 @@ function InvoiceDetails() {
   };
 
   useEffect(() => {
+    const fetchBalance = async () => {
+      if (ADDRESS && ADDRESS !== 'disconnected') {
+        const result = await GetQARBalance(ADDRESS);
+        setQARBALANCE( FormatBalance(result) );
+      }
+      if( ADDRESS === 'disconnected' || ADDRESS === '' )  {
+        setQARBALANCE( null );
+      }
+    };
+    fetchBalance(); 
+  }, [ADDRESS]);
+
+  useEffect(() => {
     const fetchOwnership = async () => {
       const result = await checkOwner();
       setIsOwner(result);
@@ -180,10 +195,6 @@ function InvoiceDetails() {
     }
   }, [parsedSenders]);
 
-  useEffect(() => {
-    console.log("Requestee:", requestee);
-  }, [requestee]);
-
   const getBalance = async () => {
     const fetchBalance = async () => {
       try {
@@ -257,6 +268,49 @@ function InvoiceDetails() {
     return "";
   };
 
+  const connectWallet = async () => {
+    try {
+      if (window.arweaveWallet) {
+        await window.arweaveWallet.connect([
+          'ACCESS_ADDRESS',
+          'SIGN_TRANSACTION',
+        ]);
+
+        const walletAddress = await window.arweaveWallet.getActiveAddress();
+        setADDRESS(walletAddress); // Global
+        console.log("Connected wallet address: ", walletAddress);
+      } else {
+        console.log("ArConnect is not installed.");
+      }
+    } catch (error) {
+      console.error("Failed to connect wallet: ", error);
+    }
+  };
+
+  useEffect(() => { 
+    if (ADDRESS !== "") {
+      console.log("Navigating to: ", location.pathname);
+      navigate(location.pathname, { replace: true });
+    }
+    
+    if (ADDRESS) {
+      const fetchInvoiceDetails = async () => {
+        try {
+          setLoading(true);
+          const result = await SendPayMessage("Get-Invoice-By-Id", JSON.stringify({ InvoiceID: id }));
+          setInvoice(JSON.parse(result));
+        } catch (error) {
+          console.error("Failed to fetch invoice details after wallet connect:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchInvoiceDetails();
+    }
+  }, [ADDRESS]);
+  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen w-screen">
@@ -292,7 +346,6 @@ function InvoiceDetails() {
     }
   };
   
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
 
@@ -562,15 +615,6 @@ function InvoiceDetails() {
                 </span>
               </div>
             ) : (
-              // <div className="items-start">
-              //   <motion.div className="flex flex-row items-center space-x-2" whileHover={{ scale: 1.02 }} transition={{ type: "tween", stiffness: 100 }} >
-              //     <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
-                  
-              //   </motion.div>
-              //   <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 text-xs text-white bg-gray-400 rounded shadow-lg z-50">
-              //       Created - {ConvertTimestampToDateTime(invoice.Timestamp)}
-              //     </span>
-              // </div>
               <div className="relative flex items-center group">
                 <div className="items-center">
                 <span className="bg-orange-100 text-orange-400 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
@@ -613,7 +657,12 @@ function InvoiceDetails() {
 
       </div>
       ) : (
-        <p className="text-gray-500">Invoice not found.</p>
+        <div className="flex flex-col items-center justify-center p-4">
+          <p className="text-gray-500 mb-4">Must connect to see invoice </p>
+          <button onClick={connectWallet} className="bg-[#4318FF] text-white font-semibold py-2 px-4 rounded hover:bg-[#503BC4] transition duration-300 ease-in-out" >
+            Connect
+          </button>
+        </div>
       )}
 
       </div> 
